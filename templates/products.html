@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Product Finder | Skincare AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+
+
+<body>
+
+
+    <!-- NAVBAR -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            ✦ SKINCARE AI
+        </div>
+
+        <nav>
+
+            <a href="/">
+                Home
+            </a>
+
+            <a href="/ingredients">
+                Ingredients
+            </a>
+
+            <a href="/products">
+                Products
+            </a>
+
+            <a href="/skin">
+                My Skin
+            </a>
+
+        </nav>
+
+    </header>
+
+
+
+    <!-- MAIN -->
+
+    <main class="product-finder-page">
+
+
+        <!-- HERO -->
+
+        <section class="product-finder-hero">
+
+            <p class="eyebrow">
+                ✦ PRODUCT FINDER
+            </p>
+
+            <h1>
+                Find skincare<br>
+                that fits you.
+            </h1>
+
+            <p>
+                Tell us what you're looking for and we'll
+                narrow down the options for you.
+            </p>
+
+        </section>
+
+
+
+        <!-- FINDER FORM -->
+
+        <section class="finder-container">
+
+
+            <form action="/products"
+                  method="POST">
+
+
+                <!-- PRODUCT TYPE -->
+
+                <div class="finder-field">
+
+                    <label for="product_type">
+                        1. What type of product are you looking for?
+                    </label>
+
+                    <select name="product_type"
+                            id="product_type"
+                            required>
+
+                        <option value="">
+                            Select product type
+                        </option>
+
+                        <option value="Cleanser">
+                            Cleanser
+                        </option>
+
+                        <option value="Serum">
+                            Serum
+                        </option>
+
+                        <option value="Moisturizer">
+                            Moisturizer
+                        </option>
+
+                        <option value="Sunscreen">
+                            Sunscreen
+                        </option>
+
+                        <option value="Acne Care">
+                            Acne Care
+                        </option>
+
+                        <option value="Barrier Repair">
+                            Barrier Repair
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- INGREDIENT -->
+
+                <div class="finder-field">
+
+                    <label for="ingredient">
+                        2. Which ingredient are you interested in?
+                    </label>
+
+                    <select name="ingredient"
+                            id="ingredient"
+                            required>
+
+                        <option value="">
+                            Select ingredient
+                        </option>
+
+                        <option value="Salicylic Acid">
+                            Salicylic Acid
+                        </option>
+
+                        <option value="Niacinamide">
+                            Niacinamide
+                        </option>
+
+                        <option value="Hyaluronic Acid">
+                            Hyaluronic Acid
+                        </option>
+
+                        <option value="Vitamin C">
+                            Vitamin C
+                        </option>
+
+                        <option value="Ceramides">
+                            Ceramides
+                        </option>
+
+                        <option value="Azelaic Acid">
+                            Azelaic Acid
+                        </option>
+
+                        <option value="Alpha Arbutin">
+                            Alpha Arbutin
+                        </option>
+
+                        <option value="Oat">
+                            Oat
+                        </option>
+
+                        <option value="Panthenol">
+                            Panthenol
+                        </option>
+
+                        <option value="Benzoyl Peroxide">
+                            Benzoyl Peroxide
+                        </option>
+
+                        <option value="UV Filters">
+                            UV Filters
+                        </option>
+
+                        <option value="Vitamin E">
+                            Vitamin E
+                        </option>
+
+                        <option value="None">
+                            No specific ingredient
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- SKIN TYPE -->
+
+                <div class="finder-field">
+
+                    <label for="skin_type">
+                        3. What is your skin type?
+                    </label>
+
+                    <select name="skin_type"
+                            id="skin_type"
+                            required>
+
+                        <option value="">
+                            Select skin type
+                        </option>
+
+                        <option value="Oily">
+                            Oily
+                        </option>
+
+                        <option value="Dry">
+                            Dry
+                        </option>
+
+                        <option value="Combination">
+                            Combination
+                        </option>
+
+                        <option value="Normal">
+                            Normal
+                        </option>
+
+                        <option value="Sensitive">
+                            Sensitive
+                        </option>
+
+                        <option value="Not Sure">
+                            I'm not sure
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- PRICE -->
+
+                <div class="finder-field">
+
+                    <label for="price_range">
+                        4. What's your budget?
+                    </label>
+
+                    <select name="price_range"
+                            id="price_range">
+
+                        <option value="">
+                            Any price
+                        </option>
+
+                        <option value="under_500">
+                            Under ₹500
+                        </option>
+
+                        <option value="500_1000">
+                            ₹500 – ₹1,000
+                        </option>
+
+                        <option value="1000_1500">
+                            ₹1,000 – ₹1,500
+                        </option>
+
+                        <option value="1500_plus">
+                            ₹1,500+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- RATING -->
+
+                <div class="finder-field">
+
+                    <label for="rating">
+                        5. Minimum rating
+                    </label>
+
+                    <select name="rating"
+                            id="rating">
+
+                        <option value="">
+                            Any rating
+                        </option>
+
+                        <option value="4.0">
+                            ⭐ 4.0+
+                        </option>
+
+                        <option value="4.5">
+                            ⭐ 4.5+
+                        </option>
+
+                        <option value="4.8">
+                            ⭐ 4.8+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- SORT -->
+
+                <div class="finder-field">
+
+                    <label for="sort_by">
+                        6. How should we sort the results?
+                    </label>
+
+                    <select name="sort_by"
+                            id="sort_by">
+
+                        <option value="">
+                            Recommended
+                        </option>
+
+                        <option value="rating">
+                            Highest rated
+                        </option>
+
+                        <option value="popularity">
+                            Most popular
+                        </option>
+
+                        <option value="price_low">
+                            Price: Low → High
+                        </option>
+
+                        <option value="price_high">
+                            Price: High → Low
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <!-- BUTTON -->
+
+                <button type="submit"
+                        class="find-products-button">
+
+                    ✦ Find My Products
+
+                </button>
+
+
+            </form>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- FOOTER -->
+
+    <footer>
+
+        <p>
+            Skincare AI · AI-powered skincare information
+        </p>
+
+    </footer>
+
+
+</body>
+
+</html>

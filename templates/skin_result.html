@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Your Skin Profile | Skincare AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+
+        /* ========================================
+           PAGE
+        ======================================== */
+
+        .skin-result-page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 65px 30px 80px;
+        }
+
+
+        /* ========================================
+           HERO
+        ======================================== */
+
+        .skin-result-hero {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .skin-result-hero .eyebrow {
+            margin-bottom: 15px;
+        }
+
+        .skin-result-hero h1 {
+            margin: 0 0 20px;
+            font-size: clamp(42px, 5vw, 60px);
+            line-height: 1.08;
+            letter-spacing: -1.5px;
+        }
+
+        .skin-result-hero .description {
+            max-width: 680px;
+            margin: 0 auto;
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+
+        /* ========================================
+           PROFILE SUMMARY
+        ======================================== */
+
+        .profile-summary {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+
+        .profile-card {
+            position: relative;
+            padding: 25px 26px;
+            background: #fff8f5;
+            border: 1px solid #eaded9;
+            border-radius: 20px;
+            box-sizing: border-box;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+
+        .profile-card:hover {
+            transform: translateY(-2px);
+            border-color: #dcc4bd;
+            box-shadow:
+                0 10px 28px rgba(80, 50, 50, 0.07);
+        }
+
+
+        .profile-card h3 {
+            margin: 0 0 10px;
+            font-size: 11px;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            color: #a2675e;
+        }
+
+
+        .profile-card p {
+            margin: 0;
+            font-size: 17px;
+            line-height: 1.55;
+            font-weight: 600;
+            color: #403532;
+        }
+
+
+        /* ========================================
+           AI RESULT
+        ======================================== */
+
+        .ai-result {
+            background: #ffffff;
+            border: 1px solid #eaded9;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow:
+                0 14px 45px rgba(70, 45, 45, 0.07);
+        }
+
+
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+
+            margin-bottom: 30px;
+            padding: 9px 15px;
+
+            background: #f6e9e5;
+            border: 1px solid #ead8d2;
+            border-radius: 30px;
+
+            color: #8d5a52;
+
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+
+        /* ========================================
+           RESULT CONTENT
+        ======================================== */
+
+        .skin-ai-content {
+            font-size: 15.5px;
+            line-height: 1.75;
+            color: #403a38;
+        }
+
+
+        .result-section {
+            margin-bottom: 20px;
+            padding: 27px 29px;
+
+            background: #fffdfc;
+
+            border: 1px solid #eee4e0;
+            border-radius: 20px;
+
+            box-sizing: border-box;
+        }
+
+
+        .result-section:last-child {
+            margin-bottom: 0;
+        }
+
+
+        .result-section h2 {
+            margin: 0 0 16px;
+
+            font-size: 21px;
+            line-height: 1.35;
+
+            color: #2f2927;
+        }
+
+
+        .result-section p {
+            margin: 0 0 11px;
+        }
+
+
+        .result-section p:last-child {
+            margin-bottom: 0;
+        }
+
+
+        /* ========================================
+           SPECIAL SECTION STYLES
+        ======================================== */
+
+        .routine-section {
+            background: #fff8f5;
+            border-color: #ead9d3;
+        }
+
+
+        .precaution-section {
+            background: #fffaf0;
+            border-color: #eadfc9;
+        }
+
+
+        .bottom-line-section {
+            background: #f8f1ee;
+            border-color: #e3d4cf;
+        }
+
+
+        .bottom-line-section h2 {
+            font-size: 24px;
+        }
+
+
+        /* ========================================
+           ROUTINE STEPS
+        ======================================== */
+
+        .routine-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+
+            padding: 14px 0;
+
+            border-bottom: 1px solid #eaded9;
+        }
+
+
+        .routine-step:first-of-type {
+            padding-top: 2px;
+        }
+
+
+        .routine-step:last-child {
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+
+        .routine-number {
+            flex: 0 0 34px;
+
+            width: 34px;
+            height: 34px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background: #ffffff;
+
+            border: 1px solid #dfd0ca;
+            border-radius: 50%;
+
+            font-size: 12px;
+            font-weight: 800;
+
+            color: #925e55;
+        }
+
+
+        .routine-text {
+            flex: 1;
+            padding-top: 5px;
+        }
+
+
+        /* ========================================
+           PRECAUTION NOTE
+        ======================================== */
+
+        .precaution-note {
+            margin-top: 18px;
+            padding: 15px 17px;
+
+            background: #ffffff;
+
+            border: 1px solid #eadfc9;
+            border-radius: 14px;
+
+            font-size: 13px;
+            line-height: 1.65;
+            color: #685b4d;
+        }
+
+
+        /* ========================================
+           LISTS
+        ======================================== */
+
+        .result-list {
+            margin: 8px 0 10px 22px;
+            padding: 0;
+        }
+
+
+        .result-list li {
+            margin-bottom: 8px;
+        }
+
+
+        .result-list li:last-child {
+            margin-bottom: 0;
+        }
+
+
+        /* ========================================
+           BACK LINK
+        ======================================== */
+
+        .back-link {
+            margin-top: 32px;
+            text-align: center;
+        }
+
+
+        .back-link a {
+            display: inline-block;
+
+            padding: 11px 17px;
+
+            background: #fff8f5;
+
+            border: 1px solid #eaded9;
+            border-radius: 12px;
+
+            color: #8f5d54;
+
+            text-decoration: none;
+
+            font-size: 14px;
+            font-weight: 700;
+
+            transition:
+                background 0.2s ease,
+                transform 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+
+        .back-link a:hover {
+            background: #fff0ed;
+            border-color: #dcc4bd;
+            transform: translateY(-2px);
+        }
+
+
+        /* ========================================
+           MOBILE
+        ======================================== */
+
+        @media (max-width: 700px) {
+
+            .skin-result-page {
+                padding: 45px 18px 60px;
+            }
+
+
+            .skin-result-hero {
+                margin-bottom: 35px;
+            }
+
+
+            .skin-result-hero h1 {
+                font-size: 40px;
+            }
+
+
+            .skin-result-hero .description {
+                font-size: 15px;
+            }
+
+
+            .profile-summary {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+
+            .profile-card {
+                padding: 21px;
+            }
+
+
+            .ai-result {
+                padding: 22px;
+                border-radius: 22px;
+            }
+
+
+            .ai-badge {
+                margin-bottom: 22px;
+                font-size: 10px;
+            }
+
+
+            .result-section {
+                padding: 21px;
+                border-radius: 17px;
+            }
+
+
+            .result-section h2 {
+                font-size: 20px;
+            }
+
+
+            .routine-step {
+                gap: 12px;
+            }
+
+
+            .routine-number {
+                flex-basis: 31px;
+                width: 31px;
+                height: 31px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- ========================================
+         NAVIGATION
+    ======================================== -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            ✦ SKINCARE AI
+        </div>
+
+
+        <nav>
+
+            <a href="{{ url_for('home') }}">
+                Home
+            </a>
+
+            <a href="{{ url_for('ingredients') }}">
+                Ingredients
+            </a>
+
+            <a href="{{ url_for('products') }}">
+                Products
+            </a>
+
+            <a href="{{ url_for('skin') }}">
+                My Skin
+            </a>
+
+            <a href="{{ url_for('ask_ai') }}">
+                Ask AI
+            </a>
+
+        </nav>
+
+    </header>
+
+
+    <!-- ========================================
+         MAIN
+    ======================================== -->
+
+    <main class="skin-result-page">
+
+
+        <!-- ====================================
+             HERO
+        ==================================== -->
+
+        <section class="skin-result-hero">
+
+            <p class="eyebrow">
+                ✦ YOUR AI SKIN PROFILE
+            </p>
+
+
+            <h1>
+                Your skin,<br>
+                understood.
+            </h1>
+
+
+            <p class="description">
+                Based on the answers you provided, here's your
+                personalized skincare information guide.
+            </p>
+
+        </section>
+
+
+        <!-- ====================================
+             PROFILE SUMMARY
+        ==================================== -->
+
+        <section class="profile-summary">
+
+
+            <div class="profile-card">
+
+                <h3>
+                    Skin Type
+                </h3>
+
+                <p>
+                    {{ skin_type | default("Not provided", true) }}
+                </p>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <h3>
+                    Main Concerns
+                </h3>
+
+                <p>
+                    {{ concerns | default("Not provided", true) }}
+                </p>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <h3>
+                    Frequency
+                </h3>
+
+                <p>
+                    {{ frequency | default("Not provided", true) }}
+                </p>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <h3>
+                    Current Routine
+                </h3>
+
+                <p>
+                    {{ routine | default("Not provided", true) }}
+                </p>
+
+            </div>
+
+
+        </section>
+
+
+        <!-- ====================================
+             AI RESULT
+        ==================================== -->
+
+        <section class="ai-result">
+
+
+            <div class="ai-badge">
+                ✦ GENERATED BY SKINCARE AI
+            </div>
+
+
+            <div class="skin-ai-content">
+
+
+                {% if result %}
+
+
+                    {% set sections = result.split('\n\n') %}
+
+
+                    {% for section in sections %}
+
+
+                        {% set cleaned_section = section.strip() %}
+
+
+                        {% if cleaned_section %}
+
+
+                            {% set lines = cleaned_section.split('\n') %}
+
+                            {% set first_line = lines[0].strip() %}
+
+
+                            {% set heading = first_line
+
+                                | replace('YOUR SKIN PROFILE', 'Your Skin Profile')
+
+                                | replace('WHAT YOUR ANSWERS SUGGEST', 'What Your Answers Suggest')
+
+                                | replace('MAIN CONCERNS', 'Main Concerns')
+
+                                | replace('MORNING ROUTINE', 'Morning Routine')
+
+                                | replace('NIGHT ROUTINE', 'Night Routine')
+
+                                | replace('WEEKLY OR OCCASIONAL CARE', 'Weekly or Occasional Care')
+
+                                | replace('INGREDIENTS TO CONSIDER', 'Ingredients to Consider')
+
+                                | replace('INGREDIENTS TO USE CAREFULLY', 'Ingredients to Use Carefully')
+
+                                | replace('PRODUCT TYPES TO LOOK FOR', 'Product Types to Look For')
+
+                                | replace('HOW TO INTRODUCE NEW PRODUCTS', 'How to Introduce New Products')
+
+                                | replace('COMMON MISTAKES TO AVOID', 'Common Mistakes to Avoid')
+
+                                | replace('GENERAL SKINCARE HABITS', 'General Skincare Habits')
+
+                                | replace('WHEN TO CONSIDER PROFESSIONAL HELP', 'When to Consider Professional Help')
+
+                                | replace('PERSONALIZED BOTTOM LINE', 'Personalized Bottom Line')
+
+                            %}
+
+
+                            {% set heading_upper = first_line.upper() %}
+
+
+                            <div class="result-section
+
+                                {% if 'MORNING ROUTINE' in heading_upper or 'NIGHT ROUTINE' in heading_upper %}
+
+                                    routine-section
+
+                                {% endif %}
+
+
+                                {% if 'CAREFULLY' in heading_upper or 'PROFESSIONAL HELP' in heading_upper %}
+
+                                    precaution-section
+
+                                {% endif %}
+
+
+                                {% if 'BOTTOM LINE' in heading_upper %}
+
+                                    bottom-line-section
+
+                                {% endif %}
+
+                            ">
+
+
+                                <h2>
+                                    {{ heading }}
+                                </h2>
+
+
+                                {% if lines|length > 1 %}
+
+
+                                    {% set step_number = namespace(value=0) %}
+
+
+                                    {% for line in lines[1:] %}
+
+
+                                        {% set line = line.strip() %}
+
+
+                                        {% if line %}
+
+
+                                            {% if line[0:2].isdigit() and line[2:3] == '.' %}
+
+
+                                                {% set step_number.value = step_number.value + 1 %}
+
+
+                                                {% if 'ROUTINE' in heading_upper %}
+
+
+                                                    <div class="routine-step">
+
+                                                        <div class="routine-number">
+                                                            {{ step_number.value }}
+                                                        </div>
+
+
+                                                        <div class="routine-text">
+                                                            {{ line[3:].strip() }}
+                                                        </div>
+
+                                                    </div>
+
+
+                                                {% else %}
+
+
+                                                    <p>
+                                                        {{ line }}
+                                                    </p>
+
+
+                                                {% endif %}
+
+
+                                            {% elif line.startswith('• ') %}
+
+
+                                                <ul class="result-list">
+
+                                                    <li>
+                                                        {{ line[2:].strip() }}
+                                                    </li>
+
+                                                </ul>
+
+
+                                            {% else %}
+
+
+                                                <p>
+                                                    {{ line }}
+                                                </p>
+
+
+                                            {% endif %}
+
+
+                                        {% endif %}
+
+
+                                    {% endfor %}
+
+
+                                {% endif %}
+
+
+                                {% if 'CAREFULLY' in heading_upper or 'PROFESSIONAL HELP' in heading_upper %}
+
+
+                                    <div class="precaution-note">
+
+                                        Take a gradual approach and stop if a product causes significant
+                                        irritation or discomfort. For persistent or severe concerns,
+                                        professional advice may be appropriate.
+
+                                    </div>
+
+
+                                {% endif %}
+
+
+                            </div>
+
+
+                        {% endif %}
+
+
+                    {% endfor %}
+
+
+                {% else %}
+
+
+                    <div class="result-section">
+
+                        <h2>
+                            No result available
+                        </h2>
+
+                        <p>
+                            We couldn't generate your skin guidance right now.
+                            Please try the questionnaire again.
+                        </p>
+
+                    </div>
+
+
+                {% endif %}
+
+
+            </div>
+
+        </section>
+
+
+        <!-- ====================================
+             BACK
+        ==================================== -->
+
+        <div class="back-link">
+
+            <a href="{{ url_for('skin') }}">
+                ← Retake skin questionnaire
+            </a>
+
+        </div>
+
+
+    </main>
+
+
+    <!-- ========================================
+         FOOTER
+    ======================================== -->
+
+    <footer>
+
+        <p>
+            Skincare AI · AI-powered skincare information
+        </p>
+
+    </footer>
+
+
+</body>
+
+</html>

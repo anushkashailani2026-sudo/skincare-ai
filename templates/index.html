@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Skincare AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+
+        /* ================================
+           HOME PAGE POLISH
+        ================================= */
+
+        .hero {
+            min-height: 560px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 60px;
+        }
+
+        .hero-text {
+            max-width: 650px;
+        }
+
+        .hero-text .eyebrow {
+            color: #b7655b;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .hero-text h1 {
+            font-size: clamp(45px, 6vw, 72px);
+            line-height: 1.02;
+            margin: 0 0 25px;
+            color: #18212b;
+        }
+
+        .hero-text h1 span {
+            color: #c9786f;
+        }
+
+        .hero-text .description {
+            max-width: 570px;
+            font-size: 18px;
+            line-height: 1.7;
+            color: #6f625f;
+        }
+
+
+        /* HERO CARD */
+
+        .hero-card {
+            width: 360px;
+            min-height: 330px;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            padding: 40px;
+
+            background: #fff0ed;
+
+            border: 1px solid #ead7d3;
+            border-radius: 40px;
+
+            text-align: center;
+
+            box-shadow: 0 20px 45px rgba(90, 60, 50, 0.08);
+
+            transform: rotate(2deg);
+        }
+
+        .hero-card .sparkle {
+            width: 75px;
+            height: 75px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin-bottom: 25px;
+
+            background: white;
+
+            border-radius: 50%;
+
+            color: #c9786f;
+
+            font-size: 35px;
+        }
+
+        .hero-card h2 {
+            margin: 0 0 12px;
+
+            color: #493d39;
+
+            font-size: 27px;
+            line-height: 1.2;
+        }
+
+        .hero-card p {
+            margin: 0;
+
+            color: #806e69;
+
+            font-size: 16px;
+        }
+
+        .mini-decoration {
+            margin-top: 35px;
+
+            font-size: 27px;
+        }
+
+
+        /* ================================
+           CHOICES
+        ================================= */
+
+        .choices {
+            padding: 75px 0 90px;
+        }
+
+        .choices > h2 {
+            margin: 0 0 10px;
+
+            text-align: center;
+
+            font-size: 38px;
+
+            color: #18212b;
+        }
+
+        .section-subtitle {
+            margin: 0 0 45px;
+
+            text-align: center;
+
+            color: #766761;
+
+            font-size: 17px;
+        }
+
+
+        /* ================================
+           CARDS
+        ================================= */
+
+        .card-container {
+            display: grid;
+
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+
+            gap: 20px;
+        }
+
+        .choice-card {
+            display: flex;
+            flex-direction: column;
+
+            min-height: 365px;
+
+            padding: 27px;
+
+            background: #ffffff;
+
+            border: 1px solid #eadbd7;
+            border-radius: 27px;
+
+            box-shadow: 0 8px 25px rgba(90, 60, 50, 0.05);
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
+        }
+
+        .choice-card:hover {
+            transform: translateY(-6px);
+
+            border-color: #d99a91;
+
+            box-shadow:
+                0 18px 35px rgba(90, 60, 50, 0.10);
+        }
+
+
+        /* ICON */
+
+        .choice-card .icon {
+            width: 65px;
+            height: 65px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin-bottom: 23px;
+
+            background: #fff0ed;
+
+            border-radius: 19px;
+
+            font-size: 30px;
+        }
+
+
+        /* TITLE */
+
+        .choice-card h3 {
+            margin: 0 0 12px;
+
+            color: #2e2927;
+
+            font-size: 21px;
+        }
+
+
+        /* DESCRIPTION */
+
+        .choice-card p {
+            margin: 0 0 25px;
+
+            color: #756862;
+
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+
+        /* BUTTON */
+
+        .choice-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 100%;
+
+            margin-top: auto;
+
+            padding: 13px 16px;
+
+            background: #fff5f2;
+
+            border: 1px solid #e6cec9;
+            border-radius: 14px;
+
+            color: #945b52;
+
+            text-decoration: none;
+
+            font-size: 14px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .choice-button:hover {
+            background: #c9786f;
+
+            border-color: #c9786f;
+
+            color: white;
+        }
+
+
+        /* ================================
+           FOOTER
+        ================================= */
+
+        footer {
+            text-align: center;
+
+            padding: 28px;
+
+            color: #8a7772;
+
+            font-size: 14px;
+        }
+
+
+        /* ================================
+           TABLET
+        ================================= */
+
+        @media (max-width: 1050px) {
+
+            .hero {
+                padding: 50px 25px;
+
+                gap: 35px;
+            }
+
+            .hero-card {
+                width: 310px;
+            }
+
+            .card-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+
+        /* ================================
+           MOBILE
+        ================================= */
+
+        @media (max-width: 700px) {
+
+            .hero {
+                flex-direction: column;
+
+                text-align: center;
+
+                padding: 45px 20px;
+            }
+
+            .hero-text {
+                max-width: 100%;
+            }
+
+            .hero-text h1 {
+                font-size: 45px;
+            }
+
+            .hero-text .description {
+                font-size: 16px;
+            }
+
+            .hero-card {
+                width: 100%;
+                max-width: 370px;
+            }
+
+            .choices {
+                padding: 50px 20px 65px;
+            }
+
+            .choices > h2 {
+                font-size: 30px;
+            }
+
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ================================
+     NAVIGATION
+================================= -->
+
+<header class="navbar">
+
+    <div class="logo">
+        ✦ SKINCARE AI
+    </div>
+
+
+    <nav>
+
+        <a href="{{ url_for('home') }}">
+            Home
+        </a>
+
+        <a href="{{ url_for('ingredients') }}">
+            Ingredients
+        </a>
+
+        <a href="{{ url_for('products') }}">
+            Products
+        </a>
+
+        <a href="{{ url_for('skin') }}">
+            My Skin
+        </a>
+
+        <a href="{{ url_for('ask_ai') }}">
+            Ask AI
+        </a>
+
+    </nav>
+
+</header>
+
+
+
+<!-- ================================
+     MAIN
+================================= -->
+
+<main>
+
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+
+        <div class="hero-text">
+
+            <p class="eyebrow">
+                ✦ AI-POWERED SKINCARE
+            </p>
+
+
+            <h1>
+
+                Your skin.<br>
+
+                Your questions.<br>
+
+                <span>Smarter answers.</span>
+
+            </h1>
+
+
+            <p class="description">
+
+                Explore skincare ingredients, discover products,
+                understand your skin concerns and get AI-powered
+                guidance — all in one place.
+
+            </p>
+
+        </div>
+
+
+
+        <!-- HERO CARD -->
+
+        <div class="hero-card">
+
+            <div class="sparkle">
+                ✦
+            </div>
+
+
+            <h2>
+                Let's understand your skin.
+            </h2>
+
+
+            <p>
+                Start with what you need today.
+            </p>
+
+
+            <div class="mini-decoration">
+                🧴 &nbsp; ✦ &nbsp; 🌿
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- ================================
+         MAIN OPTIONS
+    ================================= -->
+
+    <section class="choices">
+
+
+        <h2>
+            What are you looking for?
+        </h2>
+
+
+        <p class="section-subtitle">
+            Choose an option and let's get started.
+        </p>
+
+
+
+        <div class="card-container">
+
+
+            <!-- PRODUCT -->
+
+            <div class="choice-card">
+
+                <div class="icon">
+                    🛍️
+                </div>
+
+
+                <h3>
+                    I Need a Product
+                </h3>
+
+
+                <p>
+                    Find products based on ingredients,
+                    skin type, concerns and reviews.
+                </p>
+
+
+                <a
+                    href="{{ url_for('products') }}"
+                    class="choice-button">
+
+                    Explore Products →
+
+                </a>
+
+            </div>
+
+
+
+            <!-- INGREDIENT -->
+
+            <div class="choice-card">
+
+                <div class="icon">
+                    🧪
+                </div>
+
+
+                <h3>
+                    Learn an Ingredient
+                </h3>
+
+
+                <p>
+                    Understand what an ingredient does,
+                    how it is used and what to know.
+                </p>
+
+
+                <a
+                    href="{{ url_for('ingredients') }}"
+                    class="choice-button">
+
+                    Explore Ingredients →
+
+                </a>
+
+            </div>
+
+
+
+            <!-- SKIN ANALYSIS -->
+
+            <div class="choice-card">
+
+                <div class="icon">
+                    🧑‍🦰
+                </div>
+
+
+                <h3>
+                    Understand My Skin
+                </h3>
+
+
+                <p>
+                    Answer a few questions and receive
+                    personalized AI-powered guidance.
+                </p>
+
+
+                <a
+                    href="{{ url_for('skin') }}"
+                    class="choice-button">
+
+                    Analyze My Skin →
+
+                </a>
+
+            </div>
+
+
+
+            <!-- ASK AI -->
+
+            <div class="choice-card">
+
+                <div class="icon">
+                    🤖
+                </div>
+
+
+                <h3>
+                    Ask AI
+                </h3>
+
+
+                <p>
+                    Have a skincare question?
+                    Ask our AI skincare assistant.
+                </p>
+
+
+                <a
+                    href="{{ url_for('ask_ai') }}"
+                    class="choice-button">
+
+                    Ask AI →
+
+                </a>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+
+</main>
+
+
+
+<!-- ================================
+     FOOTER
+================================= -->
+
+<footer>
+
+    <p>
+        Skincare AI · AI-powered skincare information
+    </p>
+
+</footer>
+
+
+</body>
+
+</html>

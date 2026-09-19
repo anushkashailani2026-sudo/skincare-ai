@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>{{ ingredient }} | Skincare AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+
+        /* =========================================
+           PAGE
+        ========================================= */
+
+        .ingredient-result-page {
+            width: 100%;
+        }
+
+
+        /* =========================================
+           HERO
+        ========================================= */
+
+        .ingredient-result-hero {
+            max-width: 1050px;
+            margin: 0 auto;
+
+            padding: 70px 30px 40px;
+        }
+
+
+        .ingredient-result-hero h1 {
+            margin: 12px 0 16px;
+
+            font-size: clamp(42px, 6vw, 64px);
+
+            line-height: 1.05;
+
+            letter-spacing: -1.8px;
+        }
+
+
+        .ingredient-result-hero .description {
+            max-width: 700px;
+
+            font-size: 17px;
+
+            line-height: 1.7;
+        }
+
+
+        /* =========================================
+           AI RESULT CARD
+        ========================================= */
+
+        .ingredient-ai-card {
+
+            max-width: 1050px;
+
+            margin: 0 auto 30px;
+
+            padding: 38px;
+
+            background: #ffffff;
+
+            border: 1px solid #eadfdc;
+
+            border-radius: 28px;
+
+            box-sizing: border-box;
+
+            box-shadow:
+                0 12px 35px rgba(80, 50, 50, 0.07);
+        }
+
+
+        /* =========================================
+           AI BADGE
+        ========================================= */
+
+        .ai-badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 8px 14px;
+
+            margin-bottom: 25px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #fff1ef,
+                    #f8f1fb
+                );
+
+            border: 1px solid #eadfe5;
+
+            border-radius: 30px;
+
+            font-size: 12px;
+
+            font-weight: 750;
+
+            letter-spacing: 0.5px;
+
+            color: #a35f55;
+        }
+
+
+        /* =========================================
+           AI CONTENT
+        ========================================= */
+
+        .ingredient-result-content {
+
+            white-space: pre-line;
+
+            line-height: 1.8;
+
+            font-size: 16px;
+
+            color: #403634;
+
+            max-width: 900px;
+        }
+
+
+        .ingredient-result-content br {
+            display: none;
+        }
+
+
+        /* =========================================
+           NUMBERED SECTIONS
+        ========================================= */
+
+        .ingredient-result-content strong {
+            color: #292323;
+        }
+
+
+        /* =========================================
+           DISCLAIMER
+        ========================================= */
+
+        .ingredient-note {
+
+            max-width: 1050px;
+
+            margin: 0 auto 35px;
+
+            padding: 20px 25px;
+
+            background: #faf6f5;
+
+            border: 1px solid #eee2df;
+
+            border-radius: 18px;
+
+            box-sizing: border-box;
+        }
+
+
+        .ingredient-note p {
+
+            margin: 0;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            color: #765f5a;
+        }
+
+
+        /* =========================================
+           BACK BUTTON
+        ========================================= */
+
+        .result-back {
+
+            max-width: 1050px;
+
+            margin: 0 auto;
+
+            padding: 5px 30px 60px;
+
+            box-sizing: border-box;
+        }
+
+
+        .result-back a {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            padding: 11px 17px;
+
+            background: #fff;
+
+            border: 1px solid #e5d8d5;
+
+            border-radius: 12px;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            font-weight: 650;
+
+            color: #694f4a;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                background 0.2s ease;
+        }
+
+
+        .result-back a:hover {
+
+            transform: translateY(-2px);
+
+            background: #fff8f7;
+
+            box-shadow:
+                0 7px 18px rgba(80, 50, 50, 0.08);
+        }
+
+
+        /* =========================================
+           MOBILE
+        ========================================= */
+
+        @media (max-width: 700px) {
+
+            .ingredient-result-hero {
+
+                padding: 50px 20px 30px;
+            }
+
+
+            .ingredient-result-hero h1 {
+
+                font-size: 42px;
+            }
+
+
+            .ingredient-result-hero .description {
+
+                font-size: 16px;
+            }
+
+
+            .ingredient-ai-card {
+
+                margin: 0 20px 25px;
+
+                padding: 27px;
+
+                border-radius: 23px;
+            }
+
+
+            .ingredient-result-content {
+
+                font-size: 15px;
+
+                line-height: 1.75;
+            }
+
+
+            .ingredient-note {
+
+                margin: 0 20px 25px;
+
+                padding: 18px 20px;
+            }
+
+
+            .result-back {
+
+                padding: 5px 20px 45px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================================
+         NAVIGATION
+    ========================================= -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            ✦ SKINCARE AI
+        </div>
+
+
+        <nav>
+
+            <a href="{{ url_for('home') }}">
+                Home
+            </a>
+
+            <a href="{{ url_for('ingredients') }}">
+                Ingredients
+            </a>
+
+            <a href="{{ url_for('products') }}">
+                Products
+            </a>
+
+            <a href="{{ url_for('skin') }}">
+                My Skin
+            </a>
+
+            <a href="{{ url_for('ask_ai') }}">
+                Ask AI
+            </a>
+
+        </nav>
+
+    </header>
+
+
+    <!-- =========================================
+         MAIN
+    ========================================= -->
+
+    <main class="ingredient-result-page">
+
+
+        <!-- =====================================
+             HERO
+        ====================================== -->
+
+        <section class="ingredient-result-hero">
+
+            <p class="eyebrow">
+                AI INGREDIENT GUIDE
+            </p>
+
+
+            <h1>
+                {{ ingredient | title }}
+            </h1>
+
+
+            <p class="description">
+                A simple AI-powered guide to understanding
+                this skincare ingredient, its common uses,
+                benefits, and precautions.
+            </p>
+
+        </section>
+
+
+        <!-- =====================================
+             AI RESULT
+        ====================================== -->
+
+        <section class="ingredient-ai-card">
+
+            <div class="ai-badge">
+                ✦ GENERATED BY SKINCARE AI
+            </div>
+
+
+            <div class="ingredient-result-content">
+
+                {{ result
+                   | replace('<br>', '\n')
+                   | replace('<br/>', '\n')
+                   | replace('<br />', '\n')
+                   | e
+                }}
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             INFORMATION NOTE
+        ====================================== -->
+
+        <section class="ingredient-note">
+
+            <p>
+                ✦ This information is for general skincare education
+                and is not a medical diagnosis or personalized medical advice.
+                If you have a persistent, severe, or unusual skin concern,
+                consider speaking with a qualified dermatologist.
+            </p>
+
+        </section>
+
+
+        <!-- =====================================
+             BACK
+        ====================================== -->
+
+        <div class="result-back">
+
+            <a href="{{ url_for('ingredients') }}">
+                ← Back to ingredients
+            </a>
+
+        </div>
+
+
+    </main>
+
+
+    <!-- =========================================
+         FOOTER
+    ========================================= -->
+
+    <footer>
+
+        <p>
+            Skincare AI · AI-powered skincare information
+        </p>
+
+    </footer>
+
+
+</body>
+
+</html>

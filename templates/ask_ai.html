@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Ask AI | Skincare AI</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #fcf7f5;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #111111;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 900px;
+            margin: 55px auto;
+            padding: 38px 34px;
+            background: white;
+            border: 1px solid #eadbd7;
+            border-radius: 38px;
+            box-shadow: 0 15px 40px rgba(100, 60, 50, 0.06);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 15px 24px;
+            background: #fff0ed;
+            color: #9b5a4e;
+            border-radius: 40px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 38px;
+        }
+
+        h1 {
+            font-size: 30px;
+            margin-bottom: 20px;
+        }
+
+        /* NORMAL QUESTION FORM */
+
+        .main-form {
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 220px;
+            padding: 28px;
+            border: 1px solid #dfccc7;
+            border-radius: 25px;
+            background: #fffafa;
+            font-size: 22px;
+            resize: vertical;
+            outline: none;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        textarea:focus {
+            border-color: #c9786f;
+        }
+
+        /* QUICK QUESTIONS */
+
+        .quick-title {
+            margin-top: 48px;
+            margin-bottom: 22px;
+            font-size: 21px;
+            color: #775047;
+        }
+
+        .quick-questions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .quick-form {
+            margin: 0;
+            padding: 0;
+        }
+
+        .question-card {
+            width: 100%;
+            padding: 17px 20px;
+
+            border: 1px solid #ead7d3;
+            border-radius: 35px;
+
+            background: #fff7f5;
+            color: #775047;
+
+            font-size: 19px;
+            text-align: left;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .question-card:hover {
+            background: #fce9e5;
+            border-color: #c9786f;
+            transform: translateY(-2px);
+        }
+
+        .question-card:active {
+            transform: scale(0.98);
+        }
+
+        /* ASK BUTTON */
+
+        .ask-button {
+            width: 100%;
+            margin-top: 36px;
+            padding: 22px;
+
+            border: none;
+            border-radius: 24px;
+
+            background: #c9786f;
+            color: white;
+
+            font-size: 24px;
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s ease;
+        }
+
+        .ask-button:hover {
+            background: #b9675e;
+        }
+
+        /* ANSWER */
+
+        .answer-box {
+            margin-top: 45px;
+            padding: 30px;
+
+            background: #fff7f5;
+            border: 1px solid #ead7d3;
+            border-radius: 25px;
+        }
+
+        .answer-title {
+            font-size: 23px;
+            font-weight: bold;
+            color: #9b5a4e;
+            margin-bottom: 18px;
+        }
+
+        .ai-answer-text {
+            font-size: 18px;
+            line-height: 1.7;
+            white-space: pre-line;
+        }
+
+        /* DISCLAIMER */
+
+        .disclaimer {
+            margin-top: 30px;
+            padding: 18px;
+            background: #f8f1ef;
+            border-radius: 18px;
+            color: #765f59;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* BACK */
+
+        .back-home {
+            display: inline-block;
+            margin-top: 25px;
+            color: #9b5a4e;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 700px) {
+
+            .page {
+                margin: 20px;
+                padding: 25px 20px;
+            }
+
+            .quick-questions {
+                grid-template-columns: 1fr;
+            }
+
+            textarea {
+                font-size: 18px;
+            }
+
+            .question-card {
+                font-size: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <!-- HEADER -->
+
+    <div class="badge">
+        ✦ ASK SKINCARE AI
+    </div>
+
+
+    <!-- NORMAL QUESTION -->
+
+    <h1>
+        What would you like to know?
+    </h1>
+
+
+    <!-- ONLY THE TEXTAREA + ASK BUTTON ARE IN THIS FORM -->
+
+    <form
+        class="main-form"
+        action="{{ url_for('ask_ai') }}"
+        method="POST">
+
+        <textarea
+            id="question"
+            name="question"
+            placeholder="Type your skincare question here..."
+            required>{{ question if question else "" }}</textarea>
+
+
+        <button
+            type="submit"
+            class="ask-button">
+
+            Ask Skincare AI →
+
+        </button>
+
+    </form>
+
+
+    <!-- QUICK QUESTIONS ARE COMPLETELY OUTSIDE THE MAIN FORM -->
+
+    <h2 class="quick-title">
+        You can ask things like:
+    </h2>
+
+
+    <div class="quick-questions">
+
+        <!-- QUESTION 1 -->
+
+        <form
+            class="quick-form"
+            action="{{ url_for('ask_ai') }}"
+            method="POST">
+
+            <button
+                type="submit"
+                name="question"
+                value="Can I use niacinamide every day?"
+                class="question-card">
+
+                Can I use niacinamide every day?
+
+            </button>
+
+        </form>
+
+
+        <!-- QUESTION 2 -->
+
+        <form
+            class="quick-form"
+            action="{{ url_for('ask_ai') }}"
+            method="POST">
+
+            <button
+                type="submit"
+                name="question"
+                value="What does hyaluronic acid do?"
+                class="question-card">
+
+                What does hyaluronic acid do?
+
+            </button>
+
+        </form>
+
+
+        <!-- QUESTION 3 -->
+
+        <form
+            class="quick-form"
+            action="{{ url_for('ask_ai') }}"
+            method="POST">
+
+            <button
+                type="submit"
+                name="question"
+                value="What ingredients help oily skin?"
+                class="question-card">
+
+                What ingredients help oily skin?
+
+            </button>
+
+        </form>
+
+
+        <!-- QUESTION 4 -->
+
+        <form
+            class="quick-form"
+            action="{{ url_for('ask_ai') }}"
+            method="POST">
+
+            <button
+                type="submit"
+                name="question"
+                value="How should I build a simple routine?"
+                class="question-card">
+
+                How should I build a simple routine?
+
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- AI ANSWER -->
+
+    {% if answer %}
+
+    <div class="answer-box">
+
+        <div class="answer-title">
+            ✦ Skincare AI says
+        </div>
+
+        <div class="ai-answer-text">
+            {{ answer | e }}
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- DISCLAIMER -->
+
+    <div class="disclaimer">
+
+        Skincare AI provides general educational information
+        and does not replace advice from a qualified dermatologist.
+        For serious, painful, persistent, rapidly worsening,
+        or unusual skin problems, please consult a dermatologist.
+
+    </div>
+
+
+    <!-- BACK -->
+
+    <a href="/" class="back-home">
+        ← Back to Home
+    </a>
+
+</div>
+
+</body>
+
+</html>
