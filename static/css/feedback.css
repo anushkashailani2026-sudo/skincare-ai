@@ -1,0 +1,288 @@
+/* Feedback page styles only. Scoped so existing app pages are not redesigned. */
+.feedback-page {
+    background:
+        radial-gradient(circle at 8% 12%, rgba(255, 226, 219, .55), transparent 28rem),
+        #fffaf8;
+    min-height: 100vh;
+}
+.feedback-page .feedback-nav-link {
+    color: #c9786f;
+}
+.feedback-shell {
+    width: min(1080px, 92%);
+    margin: 0 auto;
+    padding: 62px 0 72px;
+}
+.feedback-intro {
+    max-width: 730px;
+    margin: 0 auto 32px;
+    text-align: center;
+}
+.feedback-eyebrow,
+.feedback-small-label {
+    color: #b7655b;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+.feedback-intro h1 {
+    margin: 12px 0 16px;
+    color: #302725;
+    font-size: clamp(34px, 5vw, 54px);
+    line-height: 1.12;
+    letter-spacing: -1.2px;
+}
+.feedback-intro h1 span {
+    color: #c9786f;
+}
+.feedback-intro > p:not(.feedback-eyebrow) {
+    max-width: 640px;
+    margin: 0 auto;
+    color: #776965;
+    font-size: 17px;
+    line-height: 1.75;
+}
+.feedback-trust-note {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 15px;
+    border: 1px solid #f0ded9;
+    border-radius: 30px;
+    background: rgba(255,255,255,.72);
+    color: #8a625b;
+    font-size: 12px;
+}
+.feedback-card {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 46px);
+    background: #fff;
+    border: 1px solid #f0ded9;
+    border-radius: 28px;
+    box-shadow: 0 18px 50px rgba(80, 50, 40, .08);
+}
+.feedback-card-heading {
+    margin-bottom: 30px;
+}
+.feedback-card-heading h2,
+.feedback-success h2 {
+    margin: 8px 0;
+    color: #302725;
+    font-size: clamp(25px, 4vw, 32px);
+    line-height: 1.25;
+}
+.feedback-card-heading p,
+.feedback-success p {
+    color: #776965;
+}
+.feedback-form {
+    display: grid;
+    gap: 27px;
+}
+.feedback-rating-field {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+}
+.feedback-rating-field legend,
+.feedback-field label {
+    display: block;
+    margin-bottom: 12px;
+    color: #3c302d;
+    font-size: 15px;
+    font-weight: 700;
+}
+.feedback-required {
+    color: #c65e54;
+}
+.feedback-stars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.feedback-stars input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+.feedback-stars label {
+    display: flex;
+    flex: 1 1 95px;
+    min-width: 78px;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 13px 8px 11px;
+    margin: 0;
+    border: 1px solid #f0ded9;
+    border-radius: 16px;
+    background: #fffaf8;
+    color: #8a7772;
+    cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.feedback-star {
+    color: #d8c6c0;
+    font-size: 28px;
+    line-height: 1.2;
+}
+.feedback-star-label {
+    font-size: 11px;
+    font-weight: 600;
+}
+.feedback-stars input:checked + label {
+    border-color: #d9776f;
+    background: #fff0ed;
+    box-shadow: inset 0 0 0 1px #d9776f;
+}
+.feedback-stars input:checked + label .feedback-star,
+.feedback-stars label:hover .feedback-star {
+    color: #d9776f;
+}
+.feedback-stars input:focus-visible + label {
+    outline: 3px solid rgba(201, 120, 111, .35);
+    outline-offset: 3px;
+}
+.feedback-field select,
+.feedback-field textarea {
+    display: block;
+    width: 100%;
+    border: 1px solid #e8d8d3;
+    border-radius: 14px;
+    background: #fffdfc;
+    color: #302725;
+    font: inherit;
+    outline: none;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+.feedback-field select {
+    min-height: 52px;
+    padding: 12px 14px;
+}
+.feedback-field textarea {
+    min-height: 140px;
+    padding: 14px 15px;
+    resize: vertical;
+    line-height: 1.65;
+}
+.feedback-field select:focus,
+.feedback-field textarea:focus {
+    border-color: #d9776f;
+    box-shadow: 0 0 0 4px rgba(217, 119, 111, .12);
+}
+.feedback-character-note {
+    margin-top: 7px;
+    color: #8a7772;
+    font-size: 12px;
+}
+.feedback-submit {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 54px;
+    padding: 14px 22px;
+    border: 1px solid #c9786f;
+    border-radius: 15px;
+    background: #c9786f;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(201, 120, 111, .2);
+    transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.feedback-submit:hover {
+    transform: translateY(-2px);
+    background: #b7655b;
+    box-shadow: 0 12px 22px rgba(201, 120, 111, .25);
+}
+.feedback-submit:focus-visible {
+    outline: 3px solid rgba(201, 120, 111, .35);
+    outline-offset: 3px;
+}
+.feedback-privacy-note {
+    margin-top: -13px;
+    color: #8a7772;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.6;
+}
+.feedback-error {
+    margin-bottom: 22px;
+    padding: 13px 15px;
+    border: 1px solid #e8b7b0;
+    border-radius: 12px;
+    background: #fff2f0;
+    color: #8f352d;
+}
+.feedback-success {
+    padding: 22px 0;
+    text-align: center;
+}
+.feedback-success-icon {
+    display: grid;
+    width: 68px;
+    height: 68px;
+    place-items: center;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: #edf8f0;
+    color: #38784c;
+    font-size: 32px;
+    font-weight: 800;
+}
+.feedback-submit-link {
+    max-width: 280px;
+    margin: 25px auto 0;
+    text-decoration: none;
+}
+.feedback-secondary-link {
+    display: inline-block;
+    margin-top: 16px;
+    color: #a45f56;
+    font-size: 14px;
+    font-weight: 700;
+}
+.feedback-back-home {
+    margin-top: 26px;
+    text-align: center;
+}
+.feedback-back-home a {
+    color: #94635b;
+    font-size: 14px;
+    font-weight: 700;
+}
+.feedback-page footer {
+    border-top: 1px solid #f1dfda;
+}
+@media (max-width: 700px) {
+    .feedback-shell {
+        padding: 40px 0 52px;
+    }
+    .feedback-page .navbar {
+        align-items: flex-start;
+        gap: 14px;
+        flex-direction: column;
+    }
+    .feedback-page .navbar nav {
+        flex-wrap: wrap;
+        gap: 12px 16px;
+    }
+    .feedback-stars {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .feedback-stars label {
+        min-width: 0;
+        padding: 10px 2px;
+    }
+    .feedback-star {
+        font-size: 24px;
+    }
+    .feedback-star-label {
+        font-size: 9px;
+        text-align: center;
+    }
+}

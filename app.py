@@ -805,6 +805,110 @@ Do not remove legitimate terms such as AHA/BHA, SPF 50, or 0.5-2%.
     )
 
 
+# FEEDBACK FEATURE - add `import sqlite3` near the other imports.
+# Add this block ABOVE the existing `if __name__ == "__main__":` block.
+# This supports SQLite locally and PostgreSQL on Render when DATABASE_URL is configured.
+
+import sqlite3  # Add with the other imports at the top of app.py if not already present.
+
+FEEDBACK_DB_PATH = os.path.join(app.root_path, "instance", "feedback.db")
+FEEDBACK_CATEGORIES = {
+    "ai_answers", "product_finder", "ingredients", "skin_analysis",
+    "website_design", "suggestion", "bug"
+}
+
+def init_feedback_storage():
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if database_url:
+        # PostgreSQL is recommended for deployed feedback so records survive redeploys.
+        import psycopg
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        with psycopg.connect(database_url) as connection:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS skincare_feedback (
+                    id BIGSERIAL PRIMARY KEY,
+                    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+                    category TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+    else:
+        # Local development fallback. Render's local filesystem is not durable
+        # unless a persistent disk is configured, so set DATABASE_URL on Render.
+        os.makedirs(os.path.dirname(FEEDBACK_DB_PATH), exist_ok=True)
+        with sqlite3.connect(FEEDBACK_DB_PATH) as connection:
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS skincare_feedback (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+                    category TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+def save_feedback(rating, category, message):
+    database_url = os.getenv("DATABASE_URL", "").strip()
+    if database_url:
+        import psycopg
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                "INSERT INTO skincare_feedback (rating, category, message) VALUES (%s, %s, %s)",
+                (rating, category, message)
+            )
+    else:
+        os.makedirs(os.path.dirname(FEEDBACK_DB_PATH), exist_ok=True)
+        with sqlite3.connect(FEEDBACK_DB_PATH) as connection:
+            connection.execute(
+                "INSERT INTO skincare_feedback (rating, category, message) VALUES (?, ?, ?)",
+                (rating, category, message)
+            )
+
+@app.route("/feedback", methods=["GET", "POST"])
+def feedback():
+    error = None
+    selected_rating = ""
+    selected_category = ""
+    message = ""
+
+    if request.method == "POST":
+        rating_text = request.form.get("rating", "").strip()
+        selected_category = request.form.get("category", "").strip()
+        message = request.form.get("message", "").strip()
+
+        try:
+            selected_rating = int(rating_text)
+        except (TypeError, ValueError):
+            selected_rating = 0
+
+        if selected_rating not in (1, 2, 3, 4, 5):
+            error = "Please choose a star rating from 1 to 5."
+        elif selected_category not in FEEDBACK_CATEGORIES:
+            error = "Please choose a feedback category."
+        elif len(message) < 5 or len(message) > 2000:
+            error = "Your message must be between 5 and 2,000 characters."
+        else:
+            try:
+                init_feedback_storage()
+                save_feedback(selected_rating, selected_category, message)
+                return render_template("feedback.html", success=True)
+            except Exception as exc:
+                app.logger.exception("Could not save feedback")
+                error = "We couldn't save your feedback right now. Please try again later."
+
+    return render_template(
+        "feedback.html",
+        success=False,
+        error=error,
+        selected_rating=selected_rating,
+        selected_category=selected_category,
+        message=message,
+    )
+
 # ========================================
 # RUN APPLICATION
 # ========================================

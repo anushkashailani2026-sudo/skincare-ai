@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Share Feedback | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feedback.css') }}">
+</head>
+<body class="feedback-page">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('skin') }}">My Skin</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            <a class="feedback-nav-link" href="{{ url_for('feedback') }}">Feedback</a>
+        </nav>
+    </header>
+
+    <main class="feedback-shell">
+        <section class="feedback-intro">
+            <p class="feedback-eyebrow">✦ YOUR VOICE MATTERS</p>
+            <h1>Help us make skincare <span>smarter.</span></h1>
+            <p>Your feedback helps us improve the Skincare AI experience. Tell us what worked well or what we could do better.</p>
+            <div class="feedback-trust-note">♡ Honest feedback is welcome. Please don't include private or sensitive personal information.</div>
+        </section>
+
+        <section class="feedback-card" aria-labelledby="feedback-form-title">
+            {% if success %}
+                <div class="feedback-success" role="status">
+                    <div class="feedback-success-icon">✓</div>
+                    <h2>Thank you for sharing!</h2>
+                    <p>Your feedback has been submitted successfully.</p>
+                    <a class="feedback-submit feedback-submit-link" href="{{ url_for('home') }}">Back to home</a>
+                    <a class="feedback-secondary-link" href="{{ url_for('feedback') }}">Send more feedback</a>
+                </div>
+            {% else %}
+                <div class="feedback-card-heading">
+                    <span class="feedback-small-label">A QUICK CHECK-IN</span>
+                    <h2 id="feedback-form-title">How are we doing?</h2>
+                    <p>A minute of your time can help us improve.</p>
+                </div>
+
+                {% if error %}
+                    <div class="feedback-error" role="alert">{{ error }}</div>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('feedback') }}" class="feedback-form">
+                    <fieldset class="feedback-rating-field">
+                        <legend>1. How would you rate your experience? <span class="feedback-required">*</span></legend>
+                        <div class="feedback-stars" role="radiogroup" aria-label="Rate your experience from one to five stars">
+                            {% for value, label in [(5, 'Excellent'), (4, 'Good'), (3, 'Okay'), (2, 'Poor'), (1, 'Very poor')] %}
+                                <input type="radio" id="rating-{{ value }}" name="rating" value="{{ value }}" {% if selected_rating|string == value|string %}checked{% endif %} required>
+                                <label for="rating-{{ value }}" title="{{ value }} star{% if value != 1 %}s{% endif %}">
+                                    <span class="feedback-star">★</span>
+                                    <span class="feedback-star-label">{{ label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+
+                    <div class="feedback-field">
+                        <label for="category">2. What is your feedback about? <span class="feedback-required">*</span></label>
+                        <select id="category" name="category" required>
+                            <option value="">Choose a category</option>
+                            {% for value, label in [
+                                ('ai_answers', 'Ask AI answers'),
+                                ('product_finder', 'Product finder and recommendations'),
+                                ('ingredients', 'Ingredient information'),
+                                ('skin_analysis', 'Skin analysis'),
+                                ('website_design', 'Website design and ease of use'),
+                                ('suggestion', 'General suggestion'),
+                                ('bug', "Something isn't working")
+                            ] %}
+                                <option value="{{ value }}" {% if selected_category == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="feedback-field">
+                        <label for="message">3. Tell us a little more <span class="feedback-required">*</span></label>
+                        <textarea id="message" name="message" rows="5" minlength="5" maxlength="2000" required placeholder="What did you like? What should we improve?">{{ message or '' }}</textarea>
+                        <div class="feedback-character-note">5–2,000 characters. Please don't include passwords or sensitive personal details.</div>
+                    </div>
+
+                    <button class="feedback-submit" type="submit">Submit feedback <span aria-hidden="true">→</span></button>
+                    <p class="feedback-privacy-note">Your message is used to improve this project. Please keep feedback respectful and avoid sharing sensitive information.</p>
+                </form>
+            {% endif %}
+        </section>
+        <p class="feedback-back-home"><a href="{{ url_for('home') }}">← Return to Skincare AI</a></p>
+    </main>
+
+    <footer>
+        <p>Skincare AI · AI-powered skincare information</p>
+    </footer>
+</body>
+</html>
