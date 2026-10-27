@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Feedback Dashboard | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-dashboard-body">
+    <!-- TOP ADMIN BAR -->
+    <header class="admin-topbar">
+        <div class="admin-topbar-left">
+            <div class="admin-logo">✦ SKINCARE AI <span class="admin-tag">ADMIN</span></div>
+            <span class="admin-badge">Feedback Management</span>
+        </div>
+        <div class="admin-topbar-right">
+            <span class="admin-user-pill">
+                <span class="user-avatar">👤</span>
+                <span>{{ admin_user }}</span>
+            </span>
+            <a href="{{ url_for('home') }}" class="admin-btn admin-btn-outline" target="_blank" title="Open public website in a new tab">
+                <span>🌐 Public Site</span>
+            </a>
+            <a href="{{ url_for('admin_settings') }}" class="admin-btn admin-btn-secondary" title="Change Admin ID or Password">
+                <span>⚙️ Settings</span>
+            </a>
+            <a href="{{ url_for('admin_export_feedback') }}" class="admin-btn admin-btn-secondary" title="Download all feedbacks as CSV">
+                <span>📥 Export CSV</span>
+            </a>
+            <a href="{{ url_for('admin_logout') }}" class="admin-btn admin-btn-danger" title="Log out of admin panel">
+                <span>Sign Out</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="admin-flash-container">
+                    {% for cat, msg in messages %}
+                        <div class="admin-alert admin-alert-{{ cat }}" role="alert">
+                            <span class="alert-icon">✓</span>
+                            <span>{{ msg }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- DASHBOARD HEADER -->
+        <section class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">FEEDBACK PULSE & USER REVIEWS</p>
+                <h1>User Feedback & Insights</h1>
+                <p class="admin-subtitle">Monitor community ratings, user comments, and satisfaction scores across the Skincare AI platform.</p>
+            </div>
+            <div class="admin-hero-actions">
+                <a href="#feedbacks-section" class="admin-btn admin-btn-primary">View All Reviews ↓</a>
+            </div>
+        </section>
+
+        <!-- SUMMARY STATS CARDS -->
+        <section class="admin-stats-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-blue">💬</div>
+                <div class="stat-content">
+                    <span class="stat-label">Total Feedbacks</span>
+                    <h2 class="stat-value">{{ summary.total_count }}</h2>
+                    <span class="stat-subtext">All submitted reviews</span>
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-gold">★</div>
+                <div class="stat-content">
+                    <span class="stat-label">Average Rating</span>
+                    {% if summary.total_count > 0 %}
+                        <h2 class="stat-value">{{ summary.avg_rating }} <span class="stat-out-of">/ 5.0</span></h2>
+                        <div class="stat-stars">
+                            {% for i in range(1, 6) %}
+                                {% if i <= summary.avg_rating|round|int %}
+                                    <span class="star filled">★</span>
+                                {% else %}
+                                    <span class="star empty">☆</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <h2 class="stat-value">—</h2>
+                        <span class="stat-subtext">Awaiting user ratings</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-green">♡</div>
+                <div class="stat-content">
+                    <span class="stat-label">Satisfaction Rate</span>
+                    {% if summary.total_count > 0 %}
+                        <h2 class="stat-value">{{ summary.positive_percent }}%</h2>
+                        <span class="stat-subtext">Rated 4 or 5 stars</span>
+                    {% else %}
+                        <h2 class="stat-value">—</h2>
+                        <span class="stat-subtext">No reviews yet</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-rose">🎯</div>
+                <div class="stat-content">
+                    <span class="stat-label">Top Category</span>
+                    {% if summary.total_count > 0 %}
+                        <h2 class="stat-value stat-value-sm">{{ summary.top_category }}</h2>
+                        <span class="stat-subtext">Most commented area</span>
+                    {% else %}
+                        <h2 class="stat-value stat-value-sm">—</h2>
+                        <span class="stat-subtext">No data yet</span>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- ANALYTICS BREAKDOWN ROW -->
+        <section class="admin-analytics-row">
+            <!-- STAR BREAKDOWN -->
+            <div class="analytics-card">
+                <h3>Rating Breakdown</h3>
+                <p class="analytics-desc">Distribution of scores given by users</p>
+                <div class="rating-bars">
+                    {% for star in [5, 4, 3, 2, 1] %}
+                        {% set count = summary.star_counts[star] %}
+                        {% set percent = summary.star_percents[star] %}
+                        <div class="rating-bar-row">
+                            <span class="rating-bar-label">{{ star }} ★</span>
+                            <div class="rating-progress-track">
+                                <div class="rating-progress-fill star-{{ star }}" style="width: {{ percent }}%;"></div>
+                            </div>
+                            <span class="rating-bar-count">{{ count }} ({{ percent }}%)</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CATEGORY BREAKDOWN -->
+            <div class="analytics-card">
+                <h3>Feedback by Category</h3>
+                <p class="analytics-desc">Where users are sharing feedback</p>
+                <div class="category-breakdown-list">
+                    {% if summary.category_counts %}
+                        {% for cat_name, cat_count in summary.category_counts.items() %}
+                            <div class="category-item">
+                                <span class="cat-pill-name">{{ cat_name }}</span>
+                                <span class="cat-pill-count">{{ cat_count }} reviews</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-hint">No category feedback recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- FILTER & TOOLBAR -->
+        <section id="feedbacks-section" class="admin-toolbar-section">
+            <div class="toolbar-header">
+                <div>
+                    <h2>All User Feedbacks ({{ feedbacks|length }})</h2>
+                    <p class="toolbar-sub">Filter, search, or inspect user messages</p>
+                </div>
+                {% if category or rating or search or sort != 'newest' %}
+                    <a href="{{ url_for('admin_dashboard') }}" class="clear-filters-link">✕ Reset Filters</a>
+                {% endif %}
+            </div>
+
+            <form method="GET" action="{{ url_for('admin_dashboard') }}" class="admin-filter-bar">
+                <!-- SEARCH -->
+                <div class="filter-item filter-search">
+                    <label for="search">Search Keywords</label>
+                    <div class="input-search-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="search" name="search" value="{{ search or '' }}" placeholder="Search in comments...">
+                    </div>
+                </div>
+
+                <!-- CATEGORY FILTER -->
+                <div class="filter-item">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if category == cat %}selected{% endif %}>{{ category_labels[cat] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- RATING FILTER -->
+                <div class="filter-item">
+                    <label for="rating">Star Rating</label>
+                    <select id="rating" name="rating">
+                        <option value="">All Ratings</option>
+                        <option value="5" {% if rating == '5' %}selected{% endif %}>5 Stars (★★★★★)</option>
+                        <option value="4" {% if rating == '4' %}selected{% endif %}>4 Stars (★★★★☆)</option>
+                        <option value="3" {% if rating == '3' %}selected{% endif %}>3 Stars (★★★☆☆)</option>
+                        <option value="2" {% if rating == '2' %}selected{% endif %}>2 Stars (★★☆☆☆)</option>
+                        <option value="1" {% if rating == '1' %}selected{% endif %}>1 Star (★☆☆☆☆)</option>
+                    </select>
+                </div>
+
+                <!-- SORT ORDER -->
+                <div class="filter-item">
+                    <label for="sort">Sort By</label>
+                    <select id="sort" name="sort">
+                        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                        <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+                        <option value="highest" {% if sort == 'highest' %}selected{% endif %}>Highest Rating</option>
+                        <option value="lowest" {% if sort == 'lowest' %}selected{% endif %}>Lowest Rating</option>
+                    </select>
+                </div>
+
+                <div class="filter-item filter-submit-wrap">
+                    <button type="submit" class="admin-btn admin-btn-primary">Filter</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- FEEDBACK ITEMS LIST -->
+        <section class="feedback-feed-section">
+            {% if feedbacks %}
+                <div class="feedback-cards-grid">
+                    {% for fb in feedbacks %}
+                        <article class="admin-feedback-card" id="feedback-row-{{ fb.id }}">
+                            <div class="card-header">
+                                <div class="card-header-left">
+                                    <div class="rating-badge rating-{{ fb.rating }}">
+                                        <span class="stars">{{ fb.stars }}</span>
+                                        <span class="rating-number">{{ fb.rating }}.0</span>
+                                    </div>
+                                    <span class="category-badge cat-{{ fb.category }}">
+                                        {{ fb.category_label }}
+                                    </span>
+                                </div>
+                                <div class="card-header-right">
+                                    <span class="feedback-date" title="{{ fb.created_at }}">
+                                        🕒 {{ fb.created_at_formatted }}
+                                    </span>
+                                    <span class="feedback-id-tag">#{{ fb.id }}</span>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="message-quote-icon">“</div>
+                                <p class="feedback-message-text">{{ fb.message }}</p>
+                            </div>
+
+                            <div class="card-footer">
+                                <div class="user-meta">
+                                    <span class="meta-label">Submitted by:</span>
+                                    <span class="meta-val"><strong>{{ fb.user_display }}</strong></span>
+                                </div>
+                                <form method="POST" action="{{ url_for('admin_delete_feedback', feedback_id=fb.id) }}" onsubmit="return confirm('Are you sure you want to delete feedback #{{ fb.id }}? This action cannot be undone.');">
+                                    <button type="submit" class="delete-btn" title="Delete this feedback entry">
+                                        🗑️ Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="admin-empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <h3>No Feedbacks Found</h3>
+                    <p>There are no feedback records matching your current filter criteria.</p>
+                    <a href="{{ url_for('admin_dashboard') }}" class="admin-btn admin-btn-secondary">View All Feedbacks</a>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="admin-footer">
+        <p>Skincare AI · Administrator Control Center · Protected Portal</p>
+    </footer>
+</body>
+</html>

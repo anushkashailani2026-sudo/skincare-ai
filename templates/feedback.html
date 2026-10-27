@@ -86,6 +86,12 @@
                         <div class="feedback-character-note">5–2,000 characters. Please don't include passwords or sensitive personal details.</div>
                     </div>
 
+                                        <div class="feedback-field">
+                        <label for="user_info">4. Your Name or Email (Optional)</label>
+                        <input type="text" id="user_info" name="user_info" value="{{ user_info or '' }}" placeholder="e.g. Maya or maya@example.com" maxlength="150" style="width: 100%; padding: 12px 14px; border: 1.5px solid #ead7d3; border-radius: 12px; font-size: 15px; background: #fffdfc;">
+                        <div class="feedback-character-note">Optional. Leave blank to share feedback anonymously.</div>
+                    </div>
+
                     <button class="feedback-submit" type="submit">Submit feedback <span aria-hidden="true">→</span></button>
                     <p class="feedback-privacy-note">Your message is used to improve this project. Please keep feedback respectful and avoid sharing sensitive information.</p>
                 </form>
@@ -97,5 +103,9 @@
     <footer>
         <p>Skincare AI · AI-powered skincare information</p>
     </footer>
+
+    <!-- FLOATING FEEDBACK WIDGET (BOTTOM-RIGHT) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/floating_feedback.css') }}">
+    <script src="{{ url_for('static', filename='js/floating_feedback.js') }}" defer></script>
 </body>
 </html>

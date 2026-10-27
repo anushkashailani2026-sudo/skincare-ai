@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-login-body">
+    <main class="admin-login-container">
+        <div class="admin-login-card">
+            <div class="admin-login-header">
+                <div class="admin-badge-icon">🔒</div>
+                <span class="admin-eyebrow">ADMINISTRATOR ACCESS</span>
+                <h1>Skincare AI Admin</h1>
+                <p>Sign in to access your feedback dashboard, ratings analytics, and settings.</p>
+            </div>
+
+            {% if error %}
+                <div class="admin-alert admin-alert-error" role="alert">
+                    <span class="alert-icon">⚠️</span>
+                    <span>{{ error }}</span>
+                </div>
+            {% endif %}
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="admin-alert admin-alert-{{ category }}" role="alert">
+                            <span class="alert-icon">ℹ️</span>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('admin_login', next=request.args.get('next')) }}" class="admin-login-form">
+                <div class="form-group">
+                    <label for="username">Admin ID (Username)</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        value="{{ username or '' }}" 
+                        placeholder="Enter your admin ID" 
+                        required 
+                        autocomplete="username"
+                        autofocus
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Enter your admin password" 
+                            required 
+                            autocomplete="current-password"
+                        >
+                        <button type="button" id="togglePasswordBtn" class="toggle-password-btn" aria-label="Toggle password visibility">👁️</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="admin-btn admin-btn-primary admin-btn-full">
+                    <span>Sign In to Dashboard</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+
+            <div class="admin-card-footer">
+                <a href="{{ url_for('home') }}" class="back-link">← Return to Website</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="admin-footer" style="background:transparent; border-top:none;">
+        <p>Skincare AI · Administrator Portal</p>
+    </footer>
+
+    <script>
+        const toggleBtn = document.getElementById('togglePasswordBtn');
+        const passwordInput = document.getElementById('password');
+        if (toggleBtn && passwordInput) {
+            toggleBtn.addEventListener('click', () => {
+                const isPassword = passwordInput.getAttribute('type') === 'password';
+                passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                toggleBtn.textContent = isPassword ? '🙈' : '👁️';
+            });
+        }
+    </script>
+</body>
+</html>
