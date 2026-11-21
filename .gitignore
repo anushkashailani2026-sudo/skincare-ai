@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 instance/
 *.backup
+temp_analysis/
+static/uploads/temp_analysis/
+*.db
+*.db-journal
+*.log
+.pytest_cache/

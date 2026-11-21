@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Account | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin-dashboard-body">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('journal') }}">Journal</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            <a href="{{ url_for('user_dashboard') }}" style="color:#b7655b; font-weight:700;">👤 {{ user.username }}</a>
+            <a href="{{ url_for('user_logout') }}" style="color:#e74c3c;">Sign Out</a>
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="admin-flash-container">
+                    {% for cat, msg in messages %}
+                        <div class="admin-alert admin-alert-{{ cat }}" role="alert">
+                            <span class="alert-icon">ℹ️</span>
+                            <span>{{ msg }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- USER PROFILE HEADER -->
+        <section class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">YOUR SKINCARE DASHBOARD</p>
+                <h1>Hello, {{ user.full_name or user.username }}</h1>
+                <p class="admin-subtitle">Skin Type: <strong>{{ profile.skin_type|capitalize if profile else 'Not set' }}</strong> • Email: {{ user.email }}</p>
+            </div>
+            <div class="admin-hero-actions">
+                <a href="{{ url_for('submit_review') }}" class="admin-btn admin-btn-primary">✍ Write a Product Review</a>
+                <a href="{{ url_for('routine') }}" class="admin-btn admin-btn-secondary">🧴 View Routine</a>
+                <a href="{{ url_for('journal') }}" class="admin-btn admin-btn-outline">📖 Open Journal</a>
+            </div>
+        </section>
+
+        <!-- STATS GRID -->
+        <section class="admin-stats-grid">
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-blue">⭐</div>
+                <div class="stat-content">
+                    <span class="stat-label">Reviews Submitted</span>
+                    <h2 class="stat-value">{{ reviews|length }}</h2>
+                    <span class="stat-subtext">Product reviews shared</span>
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-gold">🧴</div>
+                <div class="stat-content">
+                    <span class="stat-label">Saved Routines</span>
+                    <h2 class="stat-value">{{ routines|length }}</h2>
+                    <span class="stat-subtext">AM / PM routine regimens</span>
+                </div>
+            </div>
+
+            <div class="admin-stat-card">
+                <div class="stat-icon-wrapper stat-icon-green">📖</div>
+                <div class="stat-content">
+                    <span class="stat-label">Journal Entries</span>
+                    <h2 class="stat-value">{{ journal_count }}</h2>
+                    <span class="stat-subtext">Daily skin observations</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- USER SUBMITTED REVIEWS -->
+        <section class="admin-toolbar-section" style="margin-top: 30px;">
+            <div class="toolbar-header">
+                <div>
+                    <h2>My Submitted Product Reviews ({{ reviews|length }})</h2>
+                    <p class="toolbar-sub">Track your honest reviews and their publication status.</p>
+                </div>
+                <a href="{{ url_for('submit_review') }}" class="admin-btn admin-btn-primary" style="font-size: 13px;">+ New Review</a>
+            </div>
+
+            {% if reviews %}
+                <div class="feedback-cards-grid" style="margin-top: 20px;">
+                    {% for rev in reviews %}
+                        <article class="admin-feedback-card">
+                            <div class="card-header">
+                                <div class="card-header-left">
+                                    <div class="rating-badge">
+                                        <span>{{ '★' * rev.rating }}{{ '☆' * (5 - rev.rating) }}</span>
+                                        <span class="rating-number">{{ rev.rating }}.0</span>
+                                    </div>
+                                    <span class="category-badge" style="background:#eafaf1; color:#27ae60; border-color:#abebc6;">
+                                        {{ rev.status|capitalize }}
+                                    </span>
+                                </div>
+                                <div class="card-header-right">
+                                    <span class="feedback-date">{{ rev.created_at[:16] }}</span>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 4px; color: #b7655b;">{{ rev.product_name }}</h4>
+                                <h5 style="font-size: 14px; font-weight: 700; margin-bottom: 8px;">“{{ rev.title }}”</h5>
+                                <p class="feedback-message-text" style="padding-left: 0;">{{ rev.review_text }}</p>
+                            </div>
+
+                            <div class="card-footer">
+                                <span style="font-size: 12px; color: #6e615e;">
+                                    Skin: {{ rev.skin_type or 'Not specified' }} • Used for: {{ rev.duration_used or 'N/A' }}
+                                </span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="admin-empty-state">
+                    <div class="empty-icon">✍️</div>
+                    <h3>No Reviews Submitted Yet</h3>
+                    <p>Have you tried any skincare products recently? Help the community by sharing your honest experience!</p>
+                    <a href="{{ url_for('submit_review') }}" class="admin-btn admin-btn-primary">Write Your First Review</a>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="admin-footer">
+        <p>Skincare AI · AI-Powered Skincare Intelligence</p>
+    </footer>
+</body>
+</html>

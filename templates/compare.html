@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Skincare Products | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        .compare-selector-bar {
+            background: #ffffff;
+            border: 1px solid var(--admin-border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: var(--admin-shadow);
+        }
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 220px repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1px;
+            background: var(--admin-border);
+            border: 1px solid var(--admin-border);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--admin-shadow);
+        }
+        .compare-cell {
+            background: #ffffff;
+            padding: 16px 20px;
+            font-size: 14px;
+        }
+        .compare-cell-header {
+            background: #fff8f6;
+            font-weight: 800;
+            color: #6e615e;
+            display: flex;
+            align-items: center;
+        }
+        .compare-product-top {
+            text-align: center;
+            padding: 24px 16px;
+        }
+        .compare-product-img {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #fffaf8;
+            border: 1px solid #f1dfda;
+            overflow: hidden;
+        }
+        .compare-product-img img {
+            max-width: 85%;
+            max-height: 85%;
+            object-fit: contain;
+        }
+        @media (max-width: 768px) {
+            .compare-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="admin-dashboard-body">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}" style="color:#b7655b; font-weight:700;">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('user_dashboard') }}">👤 My Account</a>
+            {% else %}
+                <a href="{{ url_for('user_login') }}">Sign In</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">HEAD-TO-HEAD COMPARISON</p>
+                <h1>Product Formulation Comparison</h1>
+                <p class="admin-subtitle">Compare ingredients, price per unit, active overlaps, and skin suitability across products.</p>
+            </div>
+        </section>
+
+        <!-- PRODUCT SELECTOR FORM -->
+        <section class="compare-selector-bar">
+            <form method="GET" action="{{ url_for('compare') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 220px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #271f1d; text-transform: uppercase; margin-bottom: 6px; display: block;">Product 1</label>
+                    <select name="id1" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--admin-border); border-radius: 12px; font-size: 14px; background: #fffdfc;">
+                        <option value="">Select a product...</option>
+                        {% for p in all_products %}
+                            <option value="{{ p.id }}" {% if selected_id1 == p.id %}selected{% endif %}>{{ p.brand }} - {{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="flex: 1; min-width: 220px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #271f1d; text-transform: uppercase; margin-bottom: 6px; display: block;">Product 2</label>
+                    <select name="id2" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--admin-border); border-radius: 12px; font-size: 14px; background: #fffdfc;">
+                        <option value="">Select a product...</option>
+                        {% for p in all_products %}
+                            <option value="{{ p.id }}" {% if selected_id2 == p.id %}selected{% endif %}>{{ p.brand }} - {{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="flex: 1; min-width: 220px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #271f1d; text-transform: uppercase; margin-bottom: 6px; display: block;">Product 3 (Optional)</label>
+                    <select name="id3" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--admin-border); border-radius: 12px; font-size: 14px; background: #fffdfc;">
+                        <option value="">None</option>
+                        {% for p in all_products %}
+                            <option value="{{ p.id }}" {% if selected_id3 == p.id %}selected{% endif %}>{{ p.brand }} - {{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="admin-btn admin-btn-primary" style="padding: 11px 24px;">
+                    Compare Now →
+                </button>
+            </form>
+        </section>
+
+        <!-- COMPARISON MATRIX -->
+        {% if compare_data and compare_data.products|length >= 2 %}
+            <div class="compare-grid">
+                <!-- TOP HEADER ROW -->
+                <div class="compare-cell compare-cell-header">Product</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell compare-product-top">
+                        <div class="compare-product-img">
+                            {% if prod.image_url and prod.image_url.startswith('http') %}
+                                <img src="{{ prod.image_url }}" alt="">
+                            {% else %}
+                                <span style="font-size: 36px;">🧴</span>
+                            {% endif %}
+                        </div>
+                        <h4 style="font-size: 16px; font-weight: 800; color: #271f1d; margin: 0 0 4px;">{{ prod.name }}</h4>
+                        <span style="font-size: 13px; color: #b7655b; font-weight: 700;">{{ prod.brand }}</span>
+                    </div>
+                {% endfor %}
+
+                <!-- CATEGORY ROW -->
+                <div class="compare-cell compare-cell-header">Category</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell"><span class="category-badge">{{ prod.category }}</span></div>
+                {% endfor %}
+
+                <!-- PRICE ROW -->
+                <div class="compare-cell compare-cell-header">Price (INR)</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell">
+                        {% if prod.price_inr %}
+                            <strong style="font-size: 17px; color: #b7655b;">₹{{ "%.2f"|format(prod.price_inr) }}</strong>
+                        {% else %}
+                            <span style="color: #6e615e;">Varies by retailer</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <!-- RATING ROW -->
+                <div class="compare-cell compare-cell-header">Customer Rating</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell">
+                        {% if prod.rating %}
+                            <span style="color: #f39c12; font-weight: 800;">★ {{ "%.1f"|format(prod.rating) }}</span>
+                            <span style="color: #6e615e; font-size: 12px;">({{ prod.review_count or 1 }} reviews)</span>
+                        {% else %}
+                            <span style="color: #6e615e;">No reviews yet</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <!-- INGREDIENT COUNT ROW -->
+                <div class="compare-cell compare-cell-header">Total Ingredients</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell"><strong>{{ prod.ing_count }}</strong> components</div>
+                {% endfor %}
+
+                <!-- UNIQUE INGREDIENTS ROW -->
+                <div class="compare-cell compare-cell-header">Distinct Key Actives</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell">
+                        {% if compare_data.unique_per_product.get(prod.id) %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                {% for u in compare_data.unique_per_product[prod.id] %}
+                                    <span style="font-size: 11px; background: #fff0ed; color: #b7655b; padding: 2px 7px; border-radius: 6px; font-weight: 600;">{{ u }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span style="color: #6e615e; font-size: 12px;">Substantial formula overlap</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <!-- SKIN SUITABILITY ROW -->
+                <div class="compare-cell compare-cell-header">Best Suited For</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell">
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                            {% for st in prod.skin_types_list %}
+                                <span style="font-size: 11px; background: #eafaf1; color: #27ae60; padding: 2px 7px; border-radius: 6px; font-weight: 700;">{{ st }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- ACTION ROW -->
+                <div class="compare-cell compare-cell-header">Full Dossier</div>
+                {% for prod in compare_data.products %}
+                    <div class="compare-cell">
+                        <a href="{{ url_for('product_detail_route', product_id=prod.id) }}" class="admin-btn admin-btn-secondary" style="font-size: 12px; padding: 6px 14px;">
+                            View Full Report →
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- SHARED INGREDIENTS ACCORDION -->
+            {% if compare_data.common_ingredients %}
+                <section class="admin-toolbar-section" style="margin-top: 25px;">
+                    <h3>Shared Formulating Ingredients ({{ compare_data.common_ingredients|length }})</h3>
+                    <p class="toolbar-sub">Ingredients present across all compared products:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;">
+                        {% for ci in compare_data.common_ingredients %}
+                            <span style="background: #ffffff; border: 1px solid var(--admin-border); padding: 4px 10px; border-radius: 10px; font-size: 13px; font-weight: 600;">
+                                ✓ {{ ci }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+        {% else %}
+            <div class="admin-empty-state">
+                <div class="empty-icon">⚖️</div>
+                <h3>Select at Least Two Products to Compare</h3>
+                <p>Choose products from the dropdown above to inspect side-by-side ingredient breakdowns, skin suitability, and prices.</p>
+            </div>
+        {% endif %}
+    </main>
+
+    <footer class="admin-footer">
+        <p>Skincare AI · AI-Powered Skincare Intelligence</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skincare Journal & Progress Tracker | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        .journal-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 28px;
+            align-items: start;
+        }
+        .journal-form-card {
+            background: #ffffff;
+            border: 1px solid var(--admin-border);
+            border-radius: 20px;
+            padding: 26px;
+            box-shadow: var(--admin-shadow);
+        }
+        .journal-entry-card {
+            background: #ffffff;
+            border: 1px solid var(--admin-border);
+            border-radius: 20px;
+            padding: 22px 26px;
+            margin-bottom: 20px;
+            box-shadow: var(--admin-shadow);
+            transition: transform 0.2s;
+        }
+        .journal-entry-card:hover {
+            transform: translateY(-2px);
+        }
+        .condition-rating {
+            display: inline-flex;
+            gap: 4px;
+            color: #d97706;
+            font-size: 16px;
+        }
+        .tag-pill {
+            display: inline-block;
+            background: #fdf2f0;
+            color: #b7655b;
+            border: 1px solid #f8dfd8;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 8px;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        .irritation-badge {
+            display: inline-block;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+        @media (max-width: 900px) {
+            .journal-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="admin-dashboard-body">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('journal') }}" style="color:#b7655b; font-weight:700;">Journal</a>
+            <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('user_dashboard') }}">👤 {{ session.get('user_name', 'My Account') }}</a>
+            {% else %}
+                <a href="{{ url_for('user_login') }}">Sign In</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">EPIDERMAL PROGRESS LOG</p>
+                <h1>Daily Skincare Journal</h1>
+                <p class="admin-subtitle">Track daily formulations, product tolerance, reactions, and skin barrier improvements over time.</p>
+            </div>
+            <div class="admin-hero-actions">
+                <a href="{{ url_for('routine') }}" class="btn-secondary">Regimen Builder</a>
+            </div>
+        </section>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 24px;">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" style="padding:14px 18px; border-radius:12px; margin-bottom:10px; background:#fff; border:1px solid #f1dfda; font-weight:600;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if not session.get('user_id') %}
+            <div style="background: #ffffff; border: 1px solid #f1dfda; border-radius: 20px; padding: 36px; text-align: center; margin-bottom: 30px; box-shadow: var(--admin-shadow);">
+                <div style="font-size: 36px; margin-bottom: 12px;">📔</div>
+                <h3 style="font-size: 20px; color: #2d2422; margin-bottom: 8px;">Private Skin Diary</h3>
+                <p style="font-size: 14px; color: #6e615e; max-width: 500px; margin: 0 auto 20px;">
+                    Sign in to your free Skincare AI account to record your daily regimen, monitor purge cycles, and prevent product conflicts.
+                </p>
+                <div style="display:flex; justify-content:center; gap:12px;">
+                    <a href="{{ url_for('user_login') }}" class="btn-primary">Sign In to Open Journal</a>
+                    <a href="{{ url_for('user_register') }}" class="btn-secondary">Create Account</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="journal-layout">
+                <!-- Log Entry Form -->
+                <div class="journal-form-card">
+                    <h3 style="font-size:18px; color:#2d2422; margin-bottom:6px;">Log Daily Experience</h3>
+                    <p style="font-size:13px; color:#7d6e6a; margin-bottom:20px;">Record how your skin felt today and products applied.</p>
+
+                    <form method="POST" action="{{ url_for('journal') }}">
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#6e615e; margin-bottom:6px;">Date</label>
+                            <input type="date" name="entry_date" value="{{ today_date }}" required style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f1dfda; background:#fff; font-size:14px;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#6e615e; margin-bottom:6px;">Skin Comfort Rating (1-5)</label>
+                            <select name="skin_rating" style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f1dfda; background:#fff; font-size:14px;">
+                                <option value="5">★★★★★ — Radiant, Calm & Hydrated</option>
+                                <option value="4" selected>★★★★☆ — Good / Stable Condition</option>
+                                <option value="3">★★★☆☆ — Moderate / Slight Dryness</option>
+                                <option value="2">★★☆☆☆ — Irritated / Flaking</option>
+                                <option value="1">★☆☆☆☆ — Severe Breakout / Burning</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#6e615e; margin-bottom:6px;">Products Applied Today</label>
+                            <input type="text" name="products_used" placeholder="e.g. CeraVe Cleanser, Niacinamide 10%, Biore UV" style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f1dfda; background:#fff; font-size:14px;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#6e615e; margin-bottom:6px;">Key Observations (comma-separated)</label>
+                            <input type="text" name="symptoms" placeholder="e.g. Less redness, smooth texture, oily T-zone" style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f1dfda; background:#fff; font-size:14px;">
+                        </div>
+
+                        <div style="margin-bottom:16px;">
+                            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:700; color:#dc2626;">
+                                <input type="checkbox" name="irritation_occurred" value="1" id="irritationCheckbox" onchange="document.getElementById('irritationSeverityBox').style.display = this.checked ? 'block' : 'none';">
+                                Did you experience irritation or stinging?
+                            </label>
+                        </div>
+
+                        <div id="irritationSeverityBox" style="display:none; margin-bottom:16px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:10px;">
+                            <label style="display:block; font-size:12px; font-weight:800; color:#dc2626; margin-bottom:6px;">Irritation Severity</label>
+                            <select name="irritation_severity" style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid #fca5a5; background:#fff;">
+                                <option value="mild">Mild (Temporary tingle, faint redness)</option>
+                                <option value="moderate">Moderate (Sustained burning, flaking, rash)</option>
+                                <option value="severe">Severe (Swelling, painful barrier compromise)</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:20px;">
+                            <label style="display:block; font-size:12px; font-weight:800; text-transform:uppercase; color:#6e615e; margin-bottom:6px;">Notes / Environmental Factors</label>
+                            <textarea name="notes" rows="3" placeholder="Weather, sleep, water intake, or changes noticed..." style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #f1dfda; background:#fff; font-size:13px; font-family:inherit;"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:12px;">
+                            + Save Journal Entry
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Historical Entries Feed -->
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h3 style="font-size:18px; color:#2d2422; margin:0;">Journal History ({{ entries|length }})</h3>
+                        <span style="font-size:12px; color:#7d6e6a;">Sorted newest first</span>
+                    </div>
+
+                    {% if not entries %}
+                        <div style="background:#fff; border:1px solid #f1dfda; border-radius:16px; padding:40px; text-align:center; color:#8c7e7b;">
+                            <div style="font-size:32px; margin-bottom:10px;">📖</div>
+                            <p style="margin:0; font-size:15px; font-weight:600; color:#4a3f3d;">No journal entries logged yet.</p>
+                            <p style="margin:6px 0 0 0; font-size:13px;">Add your first entry today using the form on the left!</p>
+                        </div>
+                    {% else %}
+                        {% for entry in entries %}
+                            <div class="journal-entry-card">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                                    <div>
+                                        <div style="font-size:15px; font-weight:800; color:#2d2422;">
+                                            📅 {{ entry.entry_date }}
+                                        </div>
+                                        <div class="condition-rating">
+                                            {% for i in range(entry.skin_rating or 5) %}★{% endfor %}
+                                            {% for i in range(5 - (entry.skin_rating or 5)) %}<span style="color:#d1d5db;">★</span>{% endfor %}
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        {% if entry.irritation_occurred %}
+                                            <span class="irritation-badge">⚠️ {{ entry.irritation_severity or 'Irritation' }}</span>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('api_journal_delete', entry_id=entry.id) }}" onsubmit="return confirm('Delete this journal entry?');">
+                                            <button type="submit" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:18px; line-height:1;" title="Delete entry">🗑️</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                {% if entry.products_used %}
+                                    <div style="margin-bottom:8px; font-size:13px; color:#4a3f3d;">
+                                        <strong>Applied:</strong> {{ entry.products_used }}
+                                    </div>
+                                {% endif %}
+
+                                {% if entry.symptoms %}
+                                    <div style="margin-bottom:10px;">
+                                        {% for sym in entry.symptoms.split(',') %}
+                                            {% if sym.strip() %}
+                                                <span class="tag-pill">{{ sym.strip() }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                {% if entry.notes %}
+                                    <div style="font-size:13px; color:#6e615e; line-height:1.5; background:#fffcfb; padding:10px 14px; border-radius:10px; border:1px solid #f8dfd8;">
+                                        {{ entry.notes }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>

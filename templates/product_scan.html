@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Product Scanner & Image Analysis | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feedback.css') }}">
+    <style>
+        .upload-dropzone {
+            border: 2px dashed #ead7d3;
+            border-radius: 24px;
+            padding: 40px 24px;
+            text-align: center;
+            background: #fffdfc;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .upload-dropzone:hover {
+            border-color: #b7655b;
+            background: #fff8f6;
+        }
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            color: #b7655b;
+        }
+        .scan-preview-box {
+            max-width: 320px;
+            max-height: 320px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 20px auto;
+            border: 1px solid #ead7d3;
+            display: none;
+        }
+        .scan-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .match-card {
+            background: #ffffff;
+            border: 1.5px solid var(--admin-border);
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--admin-shadow);
+            border-color: #b7655b;
+        }
+        .confidence-tag {
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #eafaf1;
+            color: #27ae60;
+            border: 1px solid #abebc6;
+        }
+    </style>
+</head>
+<body class="feedback-page">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}" style="color:#b7655b; font-weight:700;">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('user_dashboard') }}">👤 My Account</a>
+            {% else %}
+                <a href="{{ url_for('user_login') }}">Sign In</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="feedback-shell">
+        <section class="feedback-intro">
+            <p class="feedback-eyebrow">✦ COMPUTER VISION & INGREDIENT OCR</p>
+            <h1>AI Product Packaging <span>Scanner.</span></h1>
+            <p>Photograph any product bottle, ingredient label, or barcode. Our vision model reads the ingredients and analyzes formulation safety.</p>
+            <div class="feedback-trust-note">🛡️ Supported formats: JPG, PNG, WEBP (up to 10MB). Images are processed safely and never shared publicly.</div>
+        </section>
+
+        <!-- SCAN / UPLOAD SECTION -->
+        <section class="feedback-card" style="max-width: 740px;">
+            <div class="feedback-card-heading">
+                <span class="feedback-small-label">PHOTO SCAN & RECOGNITION</span>
+                <h2>Upload Packaging Photo</h2>
+                <p>Capture the front label, ingredient list on the back, or barcode.</p>
+            </div>
+
+            {% if error %}
+                <div class="feedback-error" role="alert">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('scan') }}" enctype="multipart/form-data" id="scanForm">
+                <label for="product_image" class="upload-dropzone" id="dropzone">
+                    <div class="upload-icon">📷</div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #271f1d; margin-bottom: 6px;">
+                        Click to Choose or Drag Product Photo Here
+                    </h3>
+                    <p style="font-size: 13px; color: #6e615e; margin: 0;">
+                        Snap a photo of the product front, ingredients label, or barcode
+                    </p>
+                    <input 
+                        type="file" 
+                        id="product_image" 
+                        name="product_image" 
+                        accept="image/jpeg,image/png,image/webp" 
+                        style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;"
+                    >
+                </label>
+
+                <div class="scan-preview-box" id="previewBox">
+                    <img id="previewImg" src="" alt="Scan Preview">
+                </div>
+
+                <div style="text-align: center; margin: 20px 0 10px;">
+                    <span style="font-size: 13px; font-weight: 700; color: #8f7d79; text-transform: uppercase;">— OR ENTER BARCODE MANUALLY —</span>
+                </div>
+
+                <div class="feedback-field">
+                    <label for="manual_barcode">Product Barcode (EAN / UPC / Code)</label>
+                    <input 
+                        type="text" 
+                        id="manual_barcode" 
+                        name="manual_barcode" 
+                        value="{{ manual_barcode or '' }}" 
+                        placeholder="e.g. 3662361002146 or 8904417300123" 
+                        style="width: 100%; padding: 12px 16px; border: 1.5px solid #ead7d3; border-radius: 12px; font-size: 15px; background: #fffdfc;"
+                    >
+                </div>
+
+                <button class="feedback-submit" type="submit" id="submitBtn">
+                    <span>Extract Text & Identify Product</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- RESULTS / MATCHES SECTION -->
+        {% if matches %}
+            <section class="feedback-card" style="max-width: 740px; margin-top: 30px;">
+                <div class="feedback-card-heading">
+                    <span class="feedback-small-label">MATCHED PRODUCTS</span>
+                    <h2>Identification Results</h2>
+                    <p>We found the following products matching your photo or barcode:</p>
+                </div>
+
+                {% if extracted %}
+                    <div style="background: #fff8f6; border: 1px solid #f1dfda; border-radius: 14px; padding: 16px; margin-bottom: 20px; font-size: 13px;">
+                        <strong style="color: #b7655b;">Extracted Label OCR:</strong>
+                        <div style="margin-top: 6px; color: #271f1d;">
+                            {% if extracted.brand %}<strong>Brand:</strong> {{ extracted.brand }} • {% endif %}
+                            {% if extracted.product_name %}<strong>Product:</strong> {{ extracted.product_name }} • {% endif %}
+                            {% if extracted.barcode %}<strong>Barcode:</strong> {{ extracted.barcode }} • {% endif %}
+                            <strong>Clarity:</strong> {{ extracted.clarity|capitalize if extracted.clarity else 'Clear' }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for m in matches %}
+                        <div class="match-card">
+                            <div style="display: flex; align-items: center; gap: 16px;">
+                                <div style="width: 60px; height: 60px; border-radius: 12px; background: #fffaf8; border: 1px solid #ead7d3; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    {% if m.product.image_url and m.product.image_url.startswith('http') %}
+                                        <img src="{{ m.product.image_url }}" alt="" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+                                    {% else %}
+                                        <span style="font-size: 28px;">🧴</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h4 style="font-size: 16px; font-weight: 800; color: #271f1d; margin: 0 0 2px;">{{ m.product.name }}</h4>
+                                    <span style="font-size: 13px; color: #b7655b; font-weight: 700;">{{ m.product.brand }}</span>
+                                    <p style="font-size: 11px; color: #6e615e; margin: 4px 0 0;">{{ m.match_reason }}</p>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                <span class="confidence-tag">{{ m.confidence }}% Confidence</span>
+                                <a href="{{ url_for('product_detail_route', product_id=m.product.id) }}" class="admin-btn admin-btn-primary" style="font-size: 12px; padding: 6px 14px;">
+                                    View Full Analysis →
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <footer>
+        <p>Skincare AI · AI-Powered Skincare Intelligence</p>
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('product_image');
+        const previewBox = document.getElementById('previewBox');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        previewImg.src = event.target.result;
+                        previewBox.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        document.getElementById('scanForm').addEventListener('submit', () => {
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Processing Photo with AI OCR...</span>';
+            }
+        });
+    </script>
+</body>
+</html>

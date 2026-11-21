@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Product Review | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/feedback.css') }}">
+</head>
+<body class="feedback-page">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('user_dashboard') }}" style="color:#b7655b; font-weight:700;">👤 {{ user.username }}</a>
+            <a href="{{ url_for('user_logout') }}" style="color:#e74c3c;">Sign Out</a>
+        </nav>
+    </header>
+
+    <main class="feedback-shell">
+        <section class="feedback-intro">
+            <p class="feedback-eyebrow">✦ REAL COMMUNITY EXPERIENCES</p>
+            <h1>Share Your Product <span>Review.</span></h1>
+            <p>Your honest product experience helps others make informed skincare decisions tailored to their unique skin needs.</p>
+            <div class="feedback-trust-note">♡ Honest reviews (both positive and critical) are welcome. No promotional spam or medical claims.</div>
+        </section>
+
+        <section class="feedback-card" style="max-width: 680px;">
+            <div class="feedback-card-heading">
+                <span class="feedback-small-label">PRODUCT REVIEW</span>
+                <h2>Tell us about your experience</h2>
+                <p>Posting as: <strong>{{ user.full_name or user.username }}</strong> ({{ user.email }})</p>
+            </div>
+
+            {% if error %}
+                <div class="feedback-error" role="alert">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('submit_review') }}" class="feedback-form">
+                <!-- PRODUCT NAME / SELECT -->
+                <div class="feedback-field">
+                    <label for="product_name">1. Product Name <span class="feedback-required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="product_name" 
+                        name="product_name" 
+                        value="{{ product.name if product else (product_name or '') }}" 
+                        placeholder="e.g. SVR Spray Sun Secure SPF 50+ or Cetaphil Gentle Cleanser" 
+                        required 
+                        style="width: 100%; padding: 12px 16px; border: 1.5px solid #ead7d3; border-radius: 12px; font-size: 15px; background: #fffdfc;"
+                    >
+                    <input type="hidden" name="product_id" value="{{ product.id if product else (product_id or '') }}">
+                </div>
+
+                <!-- STAR RATING -->
+                <fieldset class="feedback-rating-field">
+                    <legend>2. Overall Product Rating <span class="feedback-required">*</span></legend>
+                    <div class="feedback-stars" role="radiogroup" aria-label="Rate product from one to five stars">
+                        {% for value, label in [(5, '5 Stars - Holy Grail'), (4, '4 Stars - Very Good'), (3, '3 Stars - Average'), (2, '2 Stars - Underwhelming'), (1, '1 Star - Did Not Work')] %}
+                            <input type="radio" id="rating-{{ value }}" name="rating" value="{{ value }}" {% if selected_rating|string == value|string or (not selected_rating and value == 5) %}checked{% endif %} required>
+                            <label for="rating-{{ value }}" title="{{ value }} stars">
+                                <span class="feedback-star">★</span>
+                                <span class="feedback-star-label">{{ label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                <!-- REVIEW HEADLINE -->
+                <div class="feedback-field">
+                    <label for="title">3. Review Headline / Summary <span class="feedback-required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="title" 
+                        name="title" 
+                        value="{{ title or '' }}" 
+                        placeholder="e.g. Holy grail sunscreen for acne-prone skin! Zero white cast" 
+                        required 
+                        minlength="3" 
+                        maxlength="150"
+                        style="width: 100%; padding: 12px 16px; border: 1.5px solid #ead7d3; border-radius: 12px; font-size: 15px; background: #fffdfc;"
+                    >
+                </div>
+
+                <!-- REVIEW MESSAGE -->
+                <div class="feedback-field">
+                    <label for="review_text">4. Detailed Review <span class="feedback-required">*</span></label>
+                    <textarea 
+                        id="review_text" 
+                        name="review_text" 
+                        rows="5" 
+                        minlength="10" 
+                        maxlength="3000" 
+                        required 
+                        placeholder="How did the texture feel? Did it cause breakouts or irritation? How long before you noticed results?"
+                    >{{ review_text or '' }}</textarea>
+                    <div class="feedback-character-note">At least 10 characters. Be honest about scent, texture, finish, and skin reactions.</div>
+                </div>
+
+                <!-- OPTIONAL SKIN ATTRIBUTES -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+                    <div>
+                        <label for="skin_type" style="font-size: 13px; font-weight: 700; color: #271f1d; display: block; margin-bottom: 6px;">Your Skin Type</label>
+                        <select id="skin_type" name="skin_type" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ead7d3; border-radius: 10px; font-size: 14px; background: #fffdfc;">
+                            <option value="">Select (optional)</option>
+                            <option value="Oily" {% if user.skin_type == 'Oily' %}selected{% endif %}>Oily</option>
+                            <option value="Dry" {% if user.skin_type == 'Dry' %}selected{% endif %}>Dry</option>
+                            <option value="Combination" {% if user.skin_type == 'Combination' %}selected{% endif %}>Combination</option>
+                            <option value="Sensitive" {% if user.skin_type == 'Sensitive' %}selected{% endif %}>Sensitive</option>
+                            <option value="Normal" {% if user.skin_type == 'Normal' %}selected{% endif %}>Normal</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="skin_concern" style="font-size: 13px; font-weight: 700; color: #271f1d; display: block; margin-bottom: 6px;">Main Concern</label>
+                        <select id="skin_concern" name="skin_concern" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ead7d3; border-radius: 10px; font-size: 14px; background: #fffdfc;">
+                            <option value="">Select (optional)</option>
+                            <option value="Acne & Blemishes">Acne & Blemishes</option>
+                            <option value="Hyperpigmentation">Dark Spots / Pigmentation</option>
+                            <option value="Dehydration">Dryness & Flaking</option>
+                            <option value="Redness & Rosacea">Redness / Sensitivity</option>
+                            <option value="Anti-aging">Fine Lines & Aging</option>
+                            <option value="Uneven Texture">Uneven Texture / Pores</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="duration_used" style="font-size: 13px; font-weight: 700; color: #271f1d; display: block; margin-bottom: 6px;">Duration Used</label>
+                        <select id="duration_used" name="duration_used" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ead7d3; border-radius: 10px; font-size: 14px; background: #fffdfc;">
+                            <option value="">Select (optional)</option>
+                            <option value="Less than 1 week">Less than 1 week</option>
+                            <option value="1 to 3 weeks">1 to 3 weeks</option>
+                            <option value="1 to 3 months">1 to 3 months</option>
+                            <option value="Over 3 months">Over 3 months (HG product)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="feedback-submit" type="submit">Submit Product Review <span aria-hidden="true">→</span></button>
+            </form>
+        </section>
+
+        <p class="feedback-back-home"><a href="{{ url_for('user_dashboard') }}">← Back to My Account</a></p>
+    </main>
+
+    <footer>
+        <p>Skincare AI · AI-Powered Skincare Intelligence</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.name }} by {{ product.brand }} | Skincare AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        .product-detail-hero {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 40px;
+            background: #ffffff;
+            border: 1px solid var(--admin-border);
+            border-radius: 28px;
+            padding: 40px;
+            margin-bottom: 35px;
+            box-shadow: var(--admin-shadow);
+        }
+        .product-img-box {
+            width: 100%;
+            height: 380px;
+            border-radius: 20px;
+            background: #fff8f6;
+            border: 1px solid var(--admin-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .product-img-box img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        .product-img-box img:hover {
+            transform: scale(1.05);
+        }
+        .score-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .suitability-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .suitability-card {
+            background: #fffaf8;
+            border: 1px solid var(--admin-border);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+        .suitability-meter {
+            height: 8px;
+            background: #f1dfda;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 10px 0 6px;
+        }
+        .suitability-fill {
+            height: 100%;
+            background: #27ae60;
+            border-radius: 6px;
+        }
+        .indicator-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 25px 0;
+        }
+        .indicator-card {
+            background: #ffffff;
+            border: 1px solid var(--admin-border);
+            border-radius: 18px;
+            padding: 18px;
+            text-align: center;
+        }
+        .price-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .price-table th, .price-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #f1dfda;
+            font-size: 14px;
+        }
+        .price-table th {
+            background: #fff8f6;
+            color: #6e615e;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+        @media (max-width: 860px) {
+            .product-detail-hero { grid-template-columns: 1fr; padding: 24px; }
+            .indicator-row { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body class="admin-dashboard-body">
+    <header class="navbar">
+        <div class="logo">✦ SKINCARE AI</div>
+        <nav>
+            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('products') }}">Products</a>
+            <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+            <a href="{{ url_for('compare') }}">Compare</a>
+            <a href="{{ url_for('routine') }}">Routine</a>
+            <a href="{{ url_for('ingredients') }}">Ingredients</a>
+            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+            {% if session.get('user_id') %}
+                <a href="{{ url_for('user_dashboard') }}" style="color:#b7655b; font-weight:700;">👤 My Account</a>
+            {% else %}
+                <a href="{{ url_for('user_login') }}">Sign In</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="admin-flash-container">
+                    {% for cat, msg in messages %}
+                        <div class="admin-alert admin-alert-{{ cat }}" role="alert">
+                            <span class="alert-icon">✓</span>
+                            <span>{{ msg }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- PRODUCT OVERVIEW HERO -->
+        <section class="product-detail-hero">
+            <div class="product-img-box">
+                {% if product.image_url and product.image_url.startswith('http') %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                {% else %}
+                    <span style="font-size: 72px; color: #d9776f;">🧴</span>
+                {% endif %}
+            </div>
+
+            <div>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                    <span class="category-badge">{{ product.category }}</span>
+                    <span class="score-pill" style="background:#eafaf1; color:#27ae60; border:1px solid #abebc6;">
+                        ✓ Data Completeness: {{ analysis.indicators.completeness }}%
+                    </span>
+                    {% if product.barcode %}
+                        <span style="font-size: 12px; color: #6e615e;">Barcode: <code>{{ product.barcode }}</code></span>
+                    {% endif %}
+                </div>
+
+                <h1 style="font-size: 32px; font-weight: 800; color: #271f1d; margin: 0 0 6px;">{{ product.name }}</h1>
+                <p style="font-size: 18px; color: #b7655b; font-weight: 700; margin: 0 0 16px;">by {{ product.brand }}</p>
+
+                <!-- RATING & ACTIONS -->
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 24px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="color:#f39c12; font-size: 20px;">★</span>
+                        <span style="font-size: 22px; font-weight: 800; color: #271f1d;">
+                            {{ "%.1f"|format(product.rating) if product.rating else "New" }}
+                        </span>
+                        <span style="color:#6e615e; font-size: 14px;">
+                            ({{ user_reviews|length }} community review{% if user_reviews|length != 1 %}s{% endif %})
+                        </span>
+                    </div>
+
+                    {% if product.source_url and product.source_url.startswith('http') %}
+                        <a href="{{ product.source_url }}" target="_blank" rel="noopener" style="font-size: 13px; color: #2980b9; text-decoration: underline;">
+                            ↗ Official Provider Record ({{ product.source_provider }})
+                        </a>
+                    {% endif %}
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <a href="{{ url_for('submit_review', product_id=product.id) }}" class="admin-btn admin-btn-primary">
+                        ✍ Write a Product Review
+                    </a>
+                    <a href="{{ url_for('compare', id1=product.id) }}" class="admin-btn admin-btn-secondary">
+                        ⚖️ Compare Product
+                    </a>
+                    <a href="{{ url_for('scan') }}" class="admin-btn admin-btn-outline">
+                        📷 Scan Another
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRANSPARENT ANALYSIS INDICATORS -->
+        <section class="indicator-row">
+            <div class="indicator-card">
+                <span class="stat-label">Ingredient Transparency</span>
+                <h3 style="font-size: 24px; font-weight: 800; color: #271f1d; margin: 4px 0;">{{ analysis.indicators.completeness }}%</h3>
+                <span style="font-size: 12px; color: #27ae60; font-weight: 700;">{{ analysis.indicators.completeness_label }}</span>
+            </div>
+
+            <div class="indicator-card">
+                <span class="stat-label">Clinical Evidence Base</span>
+                <h3 style="font-size: 24px; font-weight: 800; color: #271f1d; margin: 4px 0;">{{ analysis.indicators.evidence_strength }}%</h3>
+                <span style="font-size: 12px; color: #2980b9; font-weight: 700;">{{ analysis.indicators.evidence_label }}</span>
+            </div>
+
+            <div class="indicator-card">
+                <span class="stat-label">Sensitization / Irritation</span>
+                <h3 style="font-size: 24px; font-weight: 800; color: #271f1d; margin: 4px 0;">{{ analysis.indicators.irritation_level }}</h3>
+                <span style="font-size: 12px; color: #6e615e;">Based on sensitizer scan</span>
+            </div>
+
+            <div class="indicator-card">
+                <span class="stat-label">Overall Data Confidence</span>
+                <h3 style="font-size: 24px; font-weight: 800; color: #271f1d; margin: 4px 0;">{{ analysis.indicators.data_confidence }}%</h3>
+                <span style="font-size: 12px; color: #27ae60; font-weight: 700;">Verified External Source</span>
+            </div>
+        </section>
+
+        <!-- SCIENTIFIC FORMULATION REPORT & AI SYNTHESIS -->
+        <section class="admin-toolbar-section">
+            <div class="toolbar-header">
+                <div>
+                    <h2>Clinical Formulation & AI Analysis Report</h2>
+                    <p class="toolbar-sub">Evidence-based assessment of ingredient functions and skin suitability.</p>
+                </div>
+            </div>
+
+            <div style="background: #fffaf8; border: 1px solid #f1dfda; border-radius: 16px; padding: 22px; margin-bottom: 25px; line-height: 1.7; font-size: 15px; color: #271f1d;">
+                {{ analysis.ai_narrative|replace('\n', '<br>')|safe }}
+            </div>
+
+            <!-- SKIN TYPE SUITABILITY SCORES -->
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 12px;">Skin Type Compatibility Breakdown</h3>
+            <div class="suitability-grid">
+                {% for stype, score in analysis.skin_scores.items() %}
+                    <div class="suitability-card">
+                        <span style="font-size: 13px; font-weight: 700; color: #6e615e;">{{ stype }} Skin</span>
+                        <div class="suitability-meter">
+                            <div class="suitability-fill" style="width: {{ score }}%; background: {% if score >= 80 %}#27ae60{% elif score >= 65 %}#f39c12{% else %}#e74c3c{% endif %};"></div>
+                        </div>
+                        <span style="font-weight: 800; font-size: 14px; color: #271f1d;">{{ score }}% Suitability</span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- CONFLICT & LAYERING CHECK -->
+            {% if analysis.conflicts %}
+                <h3 style="font-size: 18px; font-weight: 800; margin: 25px 0 12px;">Routine Layering & Compatibility Guidance</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for c in analysis.conflicts %}
+                        <div style="background: #fff8f6; border-left: 4px solid #b7655b; border-radius: 10px; padding: 14px 18px;">
+                            <strong style="color: #b7655b; font-size: 14px;">{{ c.pair }}</strong>
+                            <p style="margin: 4px 0 0; font-size: 13px; color: #554744;">{{ c.guidance }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- FULL INGREDIENTS LIST -->
+            <h3 style="font-size: 18px; font-weight: 800; margin: 25px 0 12px;">Full Ingredient Registry ({{ analysis.total_ingredients_count }} components)</h3>
+            <div style="background: #ffffff; border: 1px solid var(--admin-border); border-radius: 14px; padding: 18px; font-size: 14px; line-height: 1.8; color: #302725;">
+                {% if analysis.parsed_ingredients %}
+                    {% for ing in analysis.parsed_ingredients %}
+                        <a href="{{ url_for('ingredient_result', ingredient_name=ing|urlencode) }}" style="display: inline-block; background: #fff0ed; color: #b7655b; font-weight: 600; padding: 3px 10px; border-radius: 8px; margin: 3px; border: 1px solid #ead7d3;">
+                            {{ ing }}
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #6e615e;">{{ product.ingredients_text or 'Ingredient details not available in source registry.' }}</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- MULTI-RETAILER PRICE COMPARISON -->
+        <section class="admin-toolbar-section">
+            <div class="toolbar-header">
+                <div>
+                    <h2>Multi-Store Price Comparison</h2>
+                    <p class="toolbar-sub">Verified pricing across Indian and international beauty retailers.</p>
+                </div>
+            </div>
+
+            {% if prices %}
+                <table class="price-table">
+                    <thead>
+                        <tr>
+                            <th>Store / Retailer</th>
+                            <th>Package Size</th>
+                            <th>Current Price</th>
+                            <th>Unit Value</th>
+                            <th>Availability</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in prices %}
+                            <tr>
+                                <td><strong>{{ p.retailer }}</strong></td>
+                                <td>{{ p.product_size or 'Standard' }}</td>
+                                <td><span style="font-size: 16px; font-weight: 800; color: #b7655b;">₹{{ "%.2f"|format(p.price) }}</span></td>
+                                <td>{{ p.price_per_unit or '—' }}</td>
+                                <td><span style="color: #27ae60; font-weight: 700;">● In Stock</span></td>
+                                <td>
+                                    <a href="{{ p.product_url }}" target="_blank" rel="noopener" class="admin-btn admin-btn-secondary" style="font-size: 12px; padding: 6px 12px;">
+                                        View Deal ↗
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div style="padding: 20px; background: #fffaf8; border-radius: 12px; text-align: center; color: #6e615e; font-size: 14px;">
+                    <p>Live multi-retailer affiliate API feeds are currently not configured. Standard retail prices reflect manufacturer reference catalogue.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- COMMUNITY CUSTOMER REVIEWS -->
+        <section class="admin-toolbar-section">
+            <div class="toolbar-header">
+                <div>
+                    <h2>Community Customer Reviews ({{ user_reviews|length }})</h2>
+                    <p class="toolbar-sub">Real reviews submitted by verified community members.</p>
+                </div>
+                <a href="{{ url_for('submit_review', product_id=product.id) }}" class="admin-btn admin-btn-primary">
+                    + Write a Review
+                </a>
+            </div>
+
+            {% if user_reviews %}
+                <div class="feedback-cards-grid" style="margin-top: 20px;">
+                    {% for rev in user_reviews %}
+                        <article class="admin-feedback-card">
+                            <div class="card-header">
+                                <div class="card-header-left">
+                                    <div class="rating-badge">
+                                        <span>{{ '★' * rev.rating }}{{ '☆' * (5 - rev.rating) }}</span>
+                                        <span class="rating-number">{{ rev.rating }}.0</span>
+                                    </div>
+                                    <span class="category-badge">{{ rev.skin_type or 'All Skin Types' }}</span>
+                                </div>
+                                <div class="card-header-right">
+                                    <span class="feedback-date">{{ rev.created_at[:16] }}</span>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 6px;">“{{ rev.title }}”</h4>
+                                <p class="feedback-message-text" style="padding-left: 0;">{{ rev.review_text }}</p>
+                            </div>
+
+                            <div class="card-footer">
+                                <span style="font-size: 12px; color: #6e615e;">
+                                    By: <strong>{{ rev.user_name }}</strong> {% if rev.duration_used %}(Used for {{ rev.duration_used }}){% endif %}
+                                </span>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="admin-empty-state">
+                    <div class="empty-icon">⭐</div>
+                    <h3>No Reviews for this Product Yet</h3>
+                    <p>Have you used this product? Be the first to share your honest review with the community!</p>
+                    <a href="{{ url_for('submit_review', product_id=product.id) }}" class="admin-btn admin-btn-primary">
+                        Write the First Review
+                    </a>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="admin-footer">
+        <p>Skincare AI · AI-Powered Skincare Intelligence</p>
+    </footer>
+</body>
+</html>

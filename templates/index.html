@@ -379,31 +379,20 @@
 
 
     <nav>
-
-        <a href="{{ url_for('home') }}">
-            Home
-        </a>
-
-        <a href="{{ url_for('ingredients') }}">
-            Ingredients
-        </a>
-
-        <a href="{{ url_for('products') }}">
-            Products
-        </a>
-
-        <a href="{{ url_for('skin') }}">
-            My Skin
-        </a>
-
-        <a href="{{ url_for('ask_ai') }}">
-            Ask AI
-        </a>
-
-        <a href="{{ url_for('feedback') }}">
-            Feedback
-        </a>
-
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('products') }}">Products</a>
+        <a href="{{ url_for('scan') }}">Scan & Analyze</a>
+        <a href="{{ url_for('compare') }}">Compare</a>
+        <a href="{{ url_for('routine') }}">Routine</a>
+        <a href="{{ url_for('ingredients') }}">Ingredients</a>
+        <a href="{{ url_for('skin') }}">My Skin</a>
+        <a href="{{ url_for('ask_ai') }}">Ask AI</a>
+        <a href="{{ url_for('feedback') }}">Feedback</a>
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('user_dashboard') }}" style="color:#b7655b; font-weight:700;">👤 {{ session.get('user_name', 'Account') }}</a>
+        {% else %}
+            <a href="{{ url_for('user_login') }}" style="color:#b7655b; font-weight:700;">Sign In</a>
+        {% endif %}
     </nav>
 
 </header>
@@ -630,6 +619,31 @@
             </div>
 
 
+        
+            <!-- SCAN PACKAGING -->
+            <div class="choice-card">
+                <div class="icon">📷</div>
+                <h3>Scan Packaging</h3>
+                <p>Upload a product image or enter a barcode for instant AI formulation analysis.</p>
+                <a href="{{ url_for('scan') }}" class="choice-button">Scan Product →</a>
+            </div>
+
+            <!-- ROUTINE BUILDER -->
+            <div class="choice-card">
+                <div class="icon">✨</div>
+                <h3>AM/PM Routine</h3>
+                <p>Build a clinically structured skincare sequence with conflict detection.</p>
+                <a href="{{ url_for('routine') }}" class="choice-button">Build Routine →</a>
+            </div>
+
+            <!-- COMPARE PRODUCTS -->
+            <div class="choice-card">
+                <div class="icon">⚖️</div>
+                <h3>Compare Products</h3>
+                <p>Side-by-side formulation matrix, active ingredient overlaps, and price comparison.</p>
+                <a href="{{ url_for('compare') }}" class="choice-button">Compare Now →</a>
+            </div>
+
         </div>
 
 
@@ -657,6 +671,10 @@
     <!-- FLOATING FEEDBACK WIDGET (BOTTOM-RIGHT) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/floating_feedback.css') }}">
     <script src="{{ url_for('static', filename='js/floating_feedback.js') }}" defer></script>
+    {% if session.get('admin_logged_in') %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_notifications.css') }}">
+        <script src="{{ url_for('static', filename='js/admin_notifications.js') }}"></script>
+    {% endif %}
 </body>
 
 </html>

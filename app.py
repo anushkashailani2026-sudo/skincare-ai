@@ -1,3 +1,33 @@
+import db as database
+from auth_service import (
+    register_user, authenticate_user, get_user_by_id,
+    submit_product_review, get_user_reviews, get_admin_reviews,
+    get_review_statistics, update_review_status, delete_user_review,
+    get_unseen_reviews_for_admin, mark_review_as_seen, export_reviews_csv
+)
+from product_service import (
+    search_products, get_product_by_id, get_product_by_barcode,
+    fetch_open_beauty_facts_by_barcode as fetch_obf_product_by_barcode,
+    fetch_open_beauty_facts_search as fetch_obf_search,
+    seed_products_if_needed
+)
+from vision_service import (
+    analyze_product_image_ocr, match_ocr_to_products
+)
+from analysis_service import (
+    analyze_product_formulation, detect_routine_conflicts,
+    check_skin_suitability
+)
+from external_reviews_service import (
+    get_external_reviews_for_product, get_external_prices_for_product,
+    compare_multiple_products
+)
+from profile_routine_service import (
+    save_user_profile, get_user_profile, generate_recommended_routine,
+    save_user_routine, get_user_routines, delete_user_routine,
+    add_journal_entry, get_user_journal_entries, delete_journal_entry
+)
+
 import json
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -1080,6 +1110,11 @@ def clear_failed_logins(ip):
 
 def init_db():
     """Initialize persistent database tables and seed initial admin if empty."""
+    database.init_db()
+    try:
+        seed_products_if_needed()
+    except Exception as e:
+        pass
     db_url = get_database_url()
     if db_url:
         import psycopg
@@ -1450,6 +1485,16 @@ def update_admin_account(current_username, current_password, new_username, new_p
         return False, "Could not update credentials in database."
 
 
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("user_id"):
+            flash("Please sign in to access this page.", "warning")
+            return redirect(url_for("user_login", next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def admin_required(f):
     """Decorator to protect admin pages and API routes with authentication check."""
     @wraps(f)
@@ -1629,21 +1674,29 @@ def admin_logout():
 @app.route("/admin/dashboard")
 @admin_required
 def admin_dashboard():
-    """Admin dashboard to view all user feedbacks, analytics, and summary."""
+    """Admin dashboard to view user product reviews and general website feedback."""
+    tab = request.args.get("tab", "reviews").strip()
     category = request.args.get("category", "").strip()
     rating = request.args.get("rating", "").strip()
+    status = request.args.get("status", "").strip()
     search = request.args.get("search", "").strip()
     sort = request.args.get("sort", "newest").strip()
 
     feedbacks = fetch_all_feedbacks(category=category, rating=rating, search=search, sort=sort)
     summary = get_feedback_summary_data()
+    reviews = get_admin_reviews(status=status, rating=rating, search=search, sort=sort)
+    review_stats = get_review_statistics()
 
     return render_template(
         "admin_dashboard.html",
+        current_tab=tab,
         feedbacks=feedbacks,
         summary=summary,
+        reviews=reviews,
+        review_stats=review_stats,
         category=category,
         rating=rating,
+        status=status,
         search=search,
         sort=sort,
         categories=sorted(list(FEEDBACK_CATEGORIES)),
@@ -1743,6 +1796,466 @@ def admin_export_feedback():
 # ========================================
 # RUN APPLICATION
 # ========================================
+
+
+# ========================================
+# USER AUTHENTICATION & PROFILE ROUTES
+# ========================================
+
+@app.route("/register", methods=["GET", "POST"])
+def user_register():
+    if session.get("user_id"):
+        return redirect(url_for("user_dashboard"))
+    
+    error = None
+    next_page = request.args.get("next") or request.form.get("next") or url_for("user_dashboard")
+    
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+        skin_type = request.form.get("skin_type", "").strip()
+        skin_concern = request.form.get("skin_concern", "").strip()
+        
+        if not username or not email or not password:
+            error = "Please fill in all required fields."
+        elif len(username) < 3:
+            error = "Username must be at least 3 characters."
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters long."
+        elif password != confirm_password:
+            error = "Passwords do not match."
+        elif "@" not in email or "." not in email:
+            error = "Please provide a valid email address."
+        else:
+            success, msg, user = register_user(
+                username=username,
+                email=email,
+                password=password,
+                skin_type=skin_type,
+                skin_concern=skin_concern
+            )
+            if success and user:
+                session.clear()
+                session["user_id"] = user["id"]
+                session["user_name"] = user["username"]
+                session["user_email"] = user["email"]
+                session.permanent = True
+                flash("Welcome to Skincare AI! Your account was created successfully.", "success")
+                return redirect(next_page)
+            else:
+                error = msg
+
+    return render_template("user_register.html", error=error)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def user_login():
+    if session.get("user_id"):
+        return redirect(url_for("user_dashboard"))
+    
+    error = None
+    next_page = request.args.get("next") or request.form.get("next") or url_for("user_dashboard")
+    
+    if request.method == "POST":
+        identifier = request.form.get("identifier", "").strip()
+        password = request.form.get("password", "").strip()
+        
+        if not identifier or not password:
+            error = "Please provide your email/username and password."
+        else:
+            success, user_or_err = authenticate_user(identifier, password)
+            if success and isinstance(user_or_err, dict):
+                user = user_or_err
+                session.clear()
+                session["user_id"] = user["id"]
+                session["user_name"] = user["username"]
+                session["user_email"] = user["email"]
+                session.permanent = True
+                flash(f"Welcome back, {user['username']}!", "success")
+                return redirect(next_page)
+            else:
+                error = user_or_err if isinstance(user_or_err, str) else "Invalid username/email or password."
+
+    return render_template("user_login.html", error=error)
+
+
+@app.route("/logout")
+def user_logout():
+    session.pop("user_id", None)
+    session.pop("user_name", None)
+    session.pop("user_email", None)
+    flash("You have been signed out.", "info")
+    return redirect(url_for("home"))
+
+
+@app.route("/user/dashboard")
+@login_required
+def user_dashboard():
+    user_id = session.get("user_id")
+    user = get_user_by_id(user_id)
+    profile = get_user_profile(user_id)
+    reviews = get_user_reviews(user_id)
+    routines = get_user_routines(user_id)
+    journal_entries = get_user_journal_entries(user_id, limit=5)
+    
+    return render_template(
+        "user_dashboard.html",
+        user=user,
+        profile=profile,
+        reviews=reviews,
+        routines=routines,
+        journal_entries=journal_entries
+    )
+
+
+# ========================================
+# PRODUCT REVIEWS & INTELLIGENCE DOSSIER
+# ========================================
+
+@app.route("/submit-review", methods=["GET", "POST"])
+@login_required
+def submit_review():
+    user_id = session.get("user_id")
+    error = None
+    
+    product_id = request.args.get("product_id") or request.form.get("product_id")
+    product_name = ""
+    if product_id:
+        prod = get_product_by_id(product_id)
+        if prod:
+            product_name = prod.get("name", "")
+            
+    if request.method == "POST":
+        p_name = request.form.get("product_name", "").strip()
+        rating_val = request.form.get("rating", "5").strip()
+        review_title = request.form.get("review_title", "").strip()
+        review_text = request.form.get("review_text", "").strip()
+        skin_type = request.form.get("skin_type", "").strip()
+        skin_concern = request.form.get("skin_concern", "").strip()
+        usage_duration = request.form.get("usage_duration", "").strip()
+        
+        try:
+            rating = int(rating_val)
+            if rating < 1 or rating > 5:
+                rating = 5
+        except (ValueError, TypeError):
+            rating = 5
+            
+        if not p_name:
+            error = "Please enter the product name."
+        elif not review_text or len(review_text) < 10:
+            error = "Please write a review of at least 10 characters."
+        else:
+            success, msg = submit_product_review(
+                user_id=user_id,
+                product_name=p_name,
+                rating=rating,
+                review_text=review_text,
+                product_id=product_id if product_id else None,
+                review_title=review_title,
+                skin_type=skin_type,
+                skin_concern=skin_concern,
+                usage_duration=usage_duration
+            )
+            if success:
+                flash("Thank you! Your product review has been submitted for moderation.", "success")
+                return redirect(url_for("user_dashboard"))
+            else:
+                error = msg
+
+    return render_template(
+        "submit_review.html",
+        product_id=product_id,
+        product_name=product_name,
+        error=error
+    )
+
+
+@app.route("/product/<product_id>")
+def product_detail_route(product_id):
+    product = get_product_by_id(product_id)
+    if not product:
+        product = get_product_by_barcode(product_id)
+    if not product:
+        matching = search_products(query=product_id, limit=1)
+        if matching:
+            product = matching[0]
+            
+    if not product:
+        flash(f"Product '{product_id}' was not found in catalog.", "warning")
+        return redirect(url_for("products"))
+        
+    analysis = analyze_product_formulation(product)
+    
+    # Community user reviews
+    community_reviews = database.execute_query(
+        "SELECT r.*, u.username as user_name FROM user_reviews r "
+        "LEFT JOIN users u ON r.user_id = u.id "
+        "WHERE (r.product_id = ? OR r.product_name = ?) AND r.status = 'approved' "
+        "ORDER BY r.created_at DESC",
+        [product.get("id"), product.get("name")],
+        fetchall=True
+    )
+    
+    # External reviews provider
+    ext_reviews = get_external_reviews_for_product(product.get("barcode") or product.get("id"))
+    
+    # Price comparison data
+    prices = get_external_prices_for_product(product.get("id") or product.get("name"))
+    
+    return render_template(
+        "product_detail.html",
+        product=product,
+        analysis=analysis,
+        community_reviews=community_reviews,
+        external_reviews=ext_reviews,
+        price_comparison=prices
+    )
+
+
+# ========================================
+# PRODUCT PACKAGING SCANNER & OCR
+# ========================================
+
+@app.route("/scan", methods=["GET", "POST"])
+def scan():
+    results = None
+    barcode_input = ""
+    error = None
+    
+    if request.method == "POST":
+        barcode_input = request.form.get("barcode", "").strip()
+        
+        # Check if an image was uploaded
+        if "image" in request.files and request.files["image"].filename:
+            file = request.files["image"]
+            image_bytes = file.read()
+            if image_bytes:
+                ocr_data, err = analyze_product_image_ocr(image_bytes, file.filename)
+                if err:
+                    error = err
+                elif ocr_data:
+                    matches = match_ocr_to_products(ocr_data)
+                    results = {
+                        "ocr": ocr_data,
+                        "matches": matches,
+                        "mode": "image"
+                    }
+        elif barcode_input:
+            prod = get_product_by_barcode(barcode_input)
+            if not prod:
+                prod = fetch_obf_product_by_barcode(barcode_input)
+            if prod:
+                return redirect(url_for("product_detail_route", product_id=prod["id"]))
+            else:
+                error = f"No product found for barcode '{barcode_input}'. You can try searching by product name."
+
+    return render_template(
+        "product_scan.html",
+        results=results,
+        barcode=barcode_input,
+        error=error
+    )
+
+
+# ========================================
+# FORMULATION HEAD-TO-HEAD COMPARISON
+# ========================================
+
+@app.route("/compare")
+def compare():
+    id1 = request.args.get("id1", "").strip()
+    id2 = request.args.get("id2", "").strip()
+    id3 = request.args.get("id3", "").strip()
+    
+    selected_ids = [i for i in [id1, id2, id3] if i]
+    comparison_data = None
+    
+    if len(selected_ids) >= 2:
+        comparison_data = compare_multiple_products(selected_ids)
+        
+    available_products = search_products(query="", limit=100)
+    
+    return render_template(
+        "compare.html",
+        comparison=comparison_data,
+        available_products=available_products,
+        id1=id1,
+        id2=id2,
+        id3=id3
+    )
+
+
+# ========================================
+# AM / PM ROUTINE BUILDER & CONFLICT DETECTION
+# ========================================
+
+@app.route("/routine", methods=["GET", "POST"])
+def routine():
+    user_id = session.get("user_id")
+    user_profile = get_user_profile(user_id) if user_id else {}
+    
+    current_skin_type = request.form.get("skin_type") or request.args.get("skin_type") or user_profile.get("skin_type") or "Combination"
+    current_concern = request.form.get("concern") or request.args.get("concern") or user_profile.get("skin_concern") or "Acne & Blemishes"
+    current_time = request.form.get("time_of_day") or request.args.get("time_of_day") or "both"
+    
+    regimen = generate_recommended_routine(current_skin_type, current_concern, current_time)
+    
+    all_products = []
+    if regimen.get("am"):
+        all_products.extend(regimen["am"].get("steps", []))
+    if regimen.get("pm"):
+        all_products.extend(regimen["pm"].get("steps", []))
+    conflict_warnings = detect_routine_conflicts(all_products)
+    
+    saved_routines = get_user_routines(user_id) if user_id else []
+    
+    am_steps = regimen.get("am", {}).get("steps", [])
+    pm_steps = regimen.get("pm", {}).get("steps", [])
+    
+    return render_template(
+        "routine.html",
+        current_skin_type=current_skin_type,
+        current_concern=current_concern,
+        current_time=current_time,
+        am_steps=am_steps,
+        pm_steps=pm_steps,
+        am_products_json=json.dumps(am_steps),
+        pm_products_json=json.dumps(pm_steps),
+        conflict_warnings=conflict_warnings,
+        saved_routines=saved_routines
+    )
+
+
+@app.route("/api/routine/save", methods=["POST"])
+@login_required
+def api_routine_save():
+    user_id = session.get("user_id")
+    routine_name = request.form.get("routine_name", "My Regimen").strip()
+    time_of_day = request.form.get("time_of_day", "am").strip()
+    skin_type = request.form.get("skin_type", "").strip()
+    concern = request.form.get("concern", "").strip()
+    products_raw = request.form.get("products_json", "[]")
+    
+    try:
+        products = json.loads(products_raw)
+    except Exception:
+        products = []
+        
+    save_user_routine(user_id, routine_name, time_of_day, products, skin_type, concern)
+    flash(f"Routine '{routine_name}' saved to your profile!", "success")
+    return redirect(url_for("routine"))
+
+
+@app.route("/api/routine/delete/<int:routine_id>", methods=["POST"])
+@login_required
+def api_routine_delete(routine_id):
+    user_id = session.get("user_id")
+    delete_user_routine(routine_id, user_id)
+    flash("Routine deleted.", "info")
+    return redirect(url_for("routine"))
+
+
+# ========================================
+# SKINCARE JOURNAL & REACTION TRACKER
+# ========================================
+
+@app.route("/journal", methods=["GET", "POST"])
+@login_required
+def journal():
+    user_id = session.get("user_id")
+    today_date = datetime.now().strftime("%Y-%m-%d")
+    
+    if request.method == "POST":
+        entry_date = request.form.get("entry_date", today_date)
+        try:
+            skin_rating = int(request.form.get("skin_rating", 4))
+        except (ValueError, TypeError):
+            skin_rating = 4
+        products_used = request.form.get("products_used", "").strip()
+        symptoms = request.form.get("symptoms", "").strip()
+        notes = request.form.get("notes", "").strip()
+        irritation_occurred = 1 if request.form.get("irritation_occurred") else 0
+        irritation_severity = request.form.get("irritation_severity", "").strip() if irritation_occurred else ""
+        
+        add_journal_entry(
+            user_id=user_id,
+            entry_date=entry_date,
+            skin_rating=skin_rating,
+            products_used=products_used,
+            symptoms=symptoms,
+            notes=notes,
+            irritation_occurred=irritation_occurred,
+            irritation_severity=irritation_severity
+        )
+        flash("Journal entry recorded successfully!", "success")
+        return redirect(url_for("journal"))
+        
+    entries = get_user_journal_entries(user_id)
+    return render_template("journal.html", entries=entries, today_date=today_date)
+
+
+@app.route("/api/journal/delete/<int:entry_id>", methods=["POST"])
+@login_required
+def api_journal_delete(entry_id):
+    user_id = session.get("user_id")
+    delete_journal_entry(entry_id, user_id)
+    flash("Journal entry deleted.", "info")
+    return redirect(url_for("journal"))
+
+
+# ========================================
+# ADMIN REVIEW MODERATION & NOTIFICATIONS
+# ========================================
+
+@app.route("/admin/review/status/<int:review_id>", methods=["POST"])
+@admin_required
+def admin_update_review_status(review_id):
+    new_status = request.form.get("status", "approved").strip()
+    success, msg = update_review_status(review_id, new_status)
+    if success:
+        flash(f"Review #{review_id} status updated to {new_status}.", "success")
+    else:
+        flash(f"Failed to update review #{review_id}: {msg}", "error")
+    return redirect(url_for("admin_dashboard", tab="reviews"))
+
+
+@app.route("/admin/review/delete/<int:review_id>", methods=["POST"])
+@admin_required
+def admin_delete_review(review_id):
+    success, msg = delete_user_review(review_id)
+    if success:
+        flash(f"Review #{review_id} has been permanently deleted.", "success")
+    else:
+        flash(f"Failed to delete review #{review_id}: {msg}", "error")
+    return redirect(url_for("admin_dashboard", tab="reviews"))
+
+
+@app.route("/admin/reviews/export")
+@admin_required
+def admin_export_reviews():
+    csv_data = export_reviews_csv()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=skincare_ai_reviews.csv"}
+    )
+
+
+@app.route("/api/admin/notifications/unseen")
+@admin_required
+def api_admin_notifications_unseen():
+    unseen = get_unseen_reviews_for_admin()
+    return jsonify({"unseen_reviews": unseen})
+
+
+@app.route("/api/admin/notifications/dismiss/<int:review_id>", methods=["POST"])
+@admin_required
+def api_admin_notifications_dismiss(review_id):
+    mark_review_as_seen(review_id)
+    return jsonify({"success": True})
 
 if __name__ == "__main__":
     app.run(debug=True)
