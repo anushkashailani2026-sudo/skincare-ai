@@ -218,9 +218,11 @@
                 <div class="compare-cell compare-cell-header">Full Dossier</div>
                 {% for prod in compare_data.products %}
                     <div class="compare-cell">
-                        <a href="{{ url_for('product_detail_route', product_id=prod.id) }}" class="admin-btn admin-btn-secondary" style="font-size: 12px; padding: 6px 14px;">
-                            View Full Report →
-                        </a>
+                        {% if prod.id %}
+                            <a href="{{ url_for('product_detail_route', product_id=prod.id) }}" class="admin-btn admin-btn-secondary" style="font-size: 12px; padding: 6px 14px;">
+                                View Full Report →
+                            </a>
+                        {% endif %}
                     </div>
                 {% endfor %}
             </div>

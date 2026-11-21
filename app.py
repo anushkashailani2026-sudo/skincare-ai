@@ -1201,6 +1201,13 @@ def init_db():
                 )
 
 
+
+# Automatic application startup database initialization and product seeding
+try:
+    init_db()
+except Exception as _startup_db_err:
+    print("Application startup database auto-initialization notice:", _startup_db_err)
+
 # ========================================
 # FEEDBACK OPERATIONS
 # ========================================
@@ -2081,10 +2088,15 @@ def compare():
     return render_template(
         "compare.html",
         comparison=comparison_data,
+        compare_data=comparison_data,
         available_products=available_products,
+        all_products=available_products,
         id1=id1,
+        selected_id1=id1,
         id2=id2,
-        id3=id3
+        selected_id2=id2,
+        id3=id3,
+        selected_id3=id3
     )
 
 

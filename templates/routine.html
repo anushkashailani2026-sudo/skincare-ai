@@ -267,9 +267,13 @@
                                         {% endif %}
                                     </div>
                                     <h4 style="font-size:16px; margin:0 0 6px 0; color:#2d2422;">
-                                        <a href="{{ url_for('product_detail_route', product_id=step.product_id) }}" style="color:#2d2422; text-decoration:none;">
-                                            {{ step.brand }} — {{ step.name }}
-                                        </a>
+                                        {% if step.product_id %}
+                                            <a href="{{ url_for('product_detail_route', product_id=step.product_id) }}" style="color:#2d2422; text-decoration:none;">
+                                                {{ step.brand }} — {{ step.name }}
+                                            </a>
+                                        {% else %}
+                                            <span style="color:#2d2422;">{{ step.brand }} — {{ step.name }}</span>
+                                        {% endif %}
                                     </h4>
                                     <p style="font-size:13px; color:#6e615e; line-height:1.5; margin-bottom:8px;">
                                         {{ step.clinical_reason }}
@@ -320,9 +324,13 @@
                                         {% endif %}
                                     </div>
                                     <h4 style="font-size:16px; margin:0 0 6px 0; color:#2d2422;">
-                                        <a href="{{ url_for('product_detail_route', product_id=step.product_id) }}" style="color:#2d2422; text-decoration:none;">
-                                            {{ step.brand }} — {{ step.name }}
-                                        </a>
+                                        {% if step.product_id %}
+                                            <a href="{{ url_for('product_detail_route', product_id=step.product_id) }}" style="color:#2d2422; text-decoration:none;">
+                                                {{ step.brand }} — {{ step.name }}
+                                            </a>
+                                        {% else %}
+                                            <span style="color:#2d2422;">{{ step.brand }} — {{ step.name }}</span>
+                                        {% endif %}
                                     </h4>
                                     <p style="font-size:13px; color:#6e615e; line-height:1.5; margin-bottom:8px;">
                                         {{ step.clinical_reason }}
