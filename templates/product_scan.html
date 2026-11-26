@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Product Scanner & Image Analysis | Skincare AI</title>
+    <title>AI Product Scanner & Barcode Detection | Skincare AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/feedback.css') }}">
@@ -11,35 +11,123 @@
         .upload-dropzone {
             border: 2px dashed #ead7d3;
             border-radius: 24px;
-            padding: 40px 24px;
+            padding: 42px 24px;
             text-align: center;
             background: #fffdfc;
             cursor: pointer;
             transition: all 0.25s ease;
             position: relative;
+            outline: none;
         }
-        .upload-dropzone:hover {
+        .upload-dropzone:hover,
+        .upload-dropzone:focus-within {
             border-color: #b7655b;
             background: #fff8f6;
         }
+        .upload-dropzone.drag-active {
+            border-color: #b7655b;
+            background: #fff0ed;
+            transform: scale(1.01);
+            box-shadow: 0 10px 30px rgba(183, 101, 91, 0.15);
+        }
         .upload-icon {
-            font-size: 48px;
+            font-size: 50px;
             margin-bottom: 12px;
             color: #b7655b;
+            transition: transform 0.2s ease;
+        }
+        .upload-dropzone:hover .upload-icon {
+            transform: translateY(-3px);
         }
         .scan-preview-box {
-            max-width: 320px;
-            max-height: 320px;
-            border-radius: 16px;
+            max-width: 360px;
+            border-radius: 20px;
             overflow: hidden;
             margin: 20px auto;
-            border: 1px solid #ead7d3;
+            border: 1.5px solid #ead7d3;
+            background: #ffffff;
+            box-shadow: 0 8px 24px rgba(90, 60, 50, 0.08);
             display: none;
+            position: relative;
         }
         .scan-preview-box img {
             width: 100%;
-            height: 100%;
+            max-height: 320px;
             object-fit: cover;
+            display: block;
+        }
+        .preview-footer {
+            padding: 12px 16px;
+            background: #fffaf8;
+            border-top: 1px solid #f1dfda;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .preview-file-name {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #271f1d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+        .btn-remove-img {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-remove-img:hover {
+            background: #fca5a5;
+            color: #991b1b;
+        }
+        .paste-tip-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff5f2;
+            border: 1px solid #f1dfda;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 12px;
+            color: #7d6e6a;
+            margin-top: 14px;
+        }
+        .paste-tip-badge kbd {
+            background: #ffffff;
+            border: 1px solid #d99a91;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-family: inherit;
+            font-weight: 800;
+            color: #b7655b;
+            font-size: 11px;
+        }
+        .barcode-banner {
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 13.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .barcode-banner-success {
+            background: #ecfdf5;
+            border: 1.5px solid #a7f3d0;
+            color: #065f46;
+        }
+        .barcode-banner-info {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            color: #475569;
         }
         .match-card {
             background: #ffffff;
@@ -65,82 +153,105 @@
             background: #eafaf1;
             color: #27ae60;
             border: 1px solid #abebc6;
+            white-space: nowrap;
         }
     </style>
 </head>
 <body class="feedback-page">
     <header class="navbar">
-        <div class="logo">✦ SKINCARE AI</div>
-        <nav>
-            <a href="{{ url_for('home') }}">Home</a>
-            <a href="{{ url_for('products') }}">Products</a>
-            <a href="{{ url_for('scan') }}" style="color:#b7655b; font-weight:700;">Scan & Analyze</a>
-            <a href="{{ url_for('compare') }}">Compare</a>
-            <a href="{{ url_for('routine') }}">Routine</a>
-            <a href="{{ url_for('ingredients') }}">Ingredients</a>
-            <a href="{{ url_for('ask_ai') }}">Ask AI</a>
-            {% if session.get('user_id') %}
-                <a href="{{ url_for('user_dashboard') }}">👤 My Account</a>
-            {% else %}
-                <a href="{{ url_for('user_login') }}">Sign In</a>
-            {% endif %}
-        </nav>
+        <div class="navbar-left">
+            <a href="{{ url_for('home') }}" class="logo">✦ SKINCARE AI</a>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </button>
+        <div class="navbar-right" id="navbarMenu">
+            <nav class="nav-links">
+                <a href="{{ url_for('home') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('products') }}" class="nav-link">Products</a>
+                <a href="{{ url_for('scan') }}" class="nav-link active" style="color:#b7655b; font-weight:700;">Scan & Analyze</a>
+                <a href="{{ url_for('compare') }}" class="nav-link">Compare</a>
+                <a href="{{ url_for('routine') }}" class="nav-link">Routine</a>
+                <a href="{{ url_for('ingredients') }}" class="nav-link">Ingredients</a>
+                <a href="{{ url_for('skin') }}" class="nav-link">My Skin</a>
+                <a href="{{ url_for('ask_ai') }}" class="nav-link">Ask AI</a>
+                <a href="{{ url_for('feedback') }}" class="nav-link">Feedback</a>
+            </nav>
+            <div class="nav-auth">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('user_dashboard') }}" class="nav-auth-btn user-btn">👤 {{ session.get('user_name', 'Account') }}</a>
+                {% else %}
+                    <a href="{{ url_for('user_login') }}" class="nav-auth-btn signin-btn">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
     </header>
 
     <main class="feedback-shell">
         <section class="feedback-intro">
             <p class="feedback-eyebrow">✦ COMPUTER VISION & INGREDIENT OCR</p>
             <h1>AI Product Packaging <span>Scanner.</span></h1>
-            <p>Photograph any product bottle, ingredient label, or barcode. Our vision model reads the ingredients and analyzes formulation safety.</p>
-            <div class="feedback-trust-note">🛡️ Supported formats: JPG, PNG, WEBP (up to 10MB). Images are processed safely and never shared publicly.</div>
+            <p>Photograph any product bottle, ingredient label, or barcode. Our vision engine and barcode decoder extract the formulation safety and catalog dossier.</p>
+            <div class="feedback-trust-note">🛡️ Supported formats: JPG, JPEG, PNG, WEBP (up to 10MB). Processed securely on-demand.</div>
         </section>
 
         <!-- SCAN / UPLOAD SECTION -->
         <section class="feedback-card" style="max-width: 740px;">
             <div class="feedback-card-heading">
-                <span class="feedback-small-label">PHOTO SCAN & RECOGNITION</span>
+                <span class="feedback-small-label">PHOTO SCAN & BARCODE RECOGNITION</span>
                 <h2>Upload Packaging Photo</h2>
-                <p>Capture the front label, ingredient list on the back, or barcode.</p>
+                <p>Drag & drop, browse files, or press Ctrl+V to paste an image screenshot.</p>
             </div>
 
-            {% if error %}
-                <div class="feedback-error" role="alert">{{ error }}</div>
-            {% endif %}
+            <div class="feedback-error" id="clientErrorBox" role="alert" style="display: {% if error %}block{% else %}none{% endif %};">
+                {{ error or '' }}
+            </div>
 
             <form method="POST" action="{{ url_for('scan') }}" enctype="multipart/form-data" id="scanForm">
-                <label for="product_image" class="upload-dropzone" id="dropzone">
+                <div class="upload-dropzone" id="dropzone" tabindex="0" role="button" aria-label="Dropzone for packaging image">
                     <div class="upload-icon">📷</div>
-                    <h3 style="font-size: 18px; font-weight: 800; color: #271f1d; margin-bottom: 6px;">
+                    <h3 style="font-size: 18px; font-weight: 800; color: #271f1d; margin-bottom: 6px;" id="dropzonePrompt">
                         Click to Choose or Drag Product Photo Here
                     </h3>
                     <p style="font-size: 13px; color: #6e615e; margin: 0;">
                         Snap a photo of the product front, ingredients label, or barcode
                     </p>
-                    <input 
-                        type="file" 
-                        id="product_image" 
-                        name="product_image" 
-                        accept="image/jpeg,image/png,image/webp" 
+
+                    <div class="paste-tip-badge">
+                        <span>💡 Tip: Press <kbd>Ctrl</kbd> + <kbd>V</kbd> anywhere to paste screenshot</span>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="product_image"
+                        name="product_image"
+                        accept="image/jpeg,image/png,image/webp"
                         style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer;"
                     >
-                </label>
+                </div>
 
                 <div class="scan-preview-box" id="previewBox">
                     <img id="previewImg" src="" alt="Scan Preview">
+                    <div class="preview-footer">
+                        <span class="preview-file-name" id="previewFileName">Selected Image</span>
+                        <button type="button" class="btn-remove-img" id="btnRemoveImg">✕ Remove</button>
+                    </div>
                 </div>
 
-                <div style="text-align: center; margin: 20px 0 10px;">
-                    <span style="font-size: 13px; font-weight: 700; color: #8f7d79; text-transform: uppercase;">— OR ENTER BARCODE MANUALLY —</span>
+                <div style="text-align: center; margin: 24px 0 12px;">
+                    <span style="font-size: 12.5px; font-weight: 800; color: #8f7d79; text-transform: uppercase; letter-spacing: 1px;">— OR ENTER BARCODE MANUALLY —</span>
                 </div>
 
                 <div class="feedback-field">
-                    <label for="manual_barcode">Product Barcode (EAN / UPC / Code)</label>
-                    <input 
-                        type="text" 
-                        id="manual_barcode" 
-                        name="manual_barcode" 
-                        value="{{ manual_barcode or '' }}" 
-                        placeholder="e.g. 3662361002146 or 8904417300123" 
+                    <label for="manual_barcode">Product Barcode (EAN-13 / UPC / Code)</label>
+                    <input
+                        type="text"
+                        id="manual_barcode"
+                        name="manual_barcode"
+                        value="{{ manual_barcode or '' }}"
+                        placeholder="e.g. 3662361002146 or 8904417300123"
                         style="width: 100%; padding: 12px 16px; border: 1.5px solid #ead7d3; border-radius: 12px; font-size: 15px; background: #fffdfc;"
                     >
                 </div>
@@ -153,52 +264,91 @@
         </section>
 
         <!-- RESULTS / MATCHES SECTION -->
-        {% if matches %}
+        {% if matches is not none %}
             <section class="feedback-card" style="max-width: 740px; margin-top: 30px;">
                 <div class="feedback-card-heading">
-                    <span class="feedback-small-label">MATCHED PRODUCTS</span>
-                    <h2>Identification Results</h2>
-                    <p>We found the following products matching your photo or barcode:</p>
+                    <span class="feedback-small-label">IDENTIFICATION RESULTS</span>
+                    <h2>Scan Analysis Dossier</h2>
+                    <p>Analysis of your uploaded packaging photo or barcode:</p>
                 </div>
 
-                {% if extracted %}
-                    <div style="background: #fff8f6; border: 1px solid #f1dfda; border-radius: 14px; padding: 16px; margin-bottom: 20px; font-size: 13px;">
-                        <strong style="color: #b7655b;">Extracted Label OCR:</strong>
-                        <div style="margin-top: 6px; color: #271f1d;">
-                            {% if extracted.brand %}<strong>Brand:</strong> {{ extracted.brand }} • {% endif %}
-                            {% if extracted.product_name %}<strong>Product:</strong> {{ extracted.product_name }} • {% endif %}
-                            {% if extracted.barcode %}<strong>Barcode:</strong> {{ extracted.barcode }} • {% endif %}
-                            <strong>Clarity:</strong> {{ extracted.clarity|capitalize if extracted.clarity else 'Clear' }}
+                <!-- PHYSICAL BARCODE STATUS -->
+                {% if barcode_info and barcode_info.barcode %}
+                    <div class="barcode-banner barcode-banner-success">
+                        <span style="font-size: 18px;">🏷️</span>
+                        <div>
+                            <strong>Physical Barcode Decoded:</strong> {{ barcode_info.format }} <code>{{ barcode_info.barcode }}</code>
+                        </div>
+                    </div>
+                {% elif image_url %}
+                    <div class="barcode-banner barcode-banner-info">
+                        <span style="font-size: 16px;">🔍</span>
+                        <div>
+                            <strong>Barcode Status:</strong> No physical 1D barcode detected on this packaging face. Processing completed via multimodal Groq Vision OCR.
                         </div>
                     </div>
                 {% endif %}
 
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    {% for m in matches %}
-                        <div class="match-card">
-                            <div style="display: flex; align-items: center; gap: 16px;">
-                                <div style="width: 60px; height: 60px; border-radius: 12px; background: #fffaf8; border: 1px solid #ead7d3; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                                    {% if m.product.image_url and m.product.image_url.startswith('http') %}
-                                        <img src="{{ m.product.image_url }}" alt="" style="max-width: 90%; max-height: 90%; object-fit: contain;">
-                                    {% else %}
-                                        <span style="font-size: 28px;">🧴</span>
-                                    {% endif %}
+                <!-- EXTRACTED OCR SUMMARY -->
+                {% if extracted %}
+                    <div style="background: #fff8f6; border: 1px solid #f1dfda; border-radius: 14px; padding: 16px; margin-bottom: 20px; font-size: 13px;">
+                        <strong style="color: #b7655b; font-size: 14px;">Extracted Packaging OCR:</strong>
+                        <div style="margin-top: 8px; color: #271f1d; line-height: 1.6;">
+                            {% if extracted.brand %}<div><strong>Brand:</strong> {{ extracted.brand }}</div>{% endif %}
+                            {% if extracted.product_name %}<div><strong>Product:</strong> {{ extracted.product_name }}</div>{% endif %}
+                            {% if extracted.category %}<div><strong>Category:</strong> {{ extracted.category }}</div>{% endif %}
+                            {% if extracted.ingredients_text %}
+                                <div style="margin-top: 6px;">
+                                    <strong>Ingredients Detected:</strong>
+                                    <div style="background: #ffffff; border: 1px solid #ead7d3; border-radius: 8px; padding: 8px 12px; margin-top: 4px; font-family: monospace; font-size: 12px; max-height: 110px; overflow-y: auto;">
+                                        {{ extracted.ingredients_text }}
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 style="font-size: 16px; font-weight: 800; color: #271f1d; margin: 0 0 2px;">{{ m.product.name }}</h4>
-                                    <span style="font-size: 13px; color: #b7655b; font-weight: 700;">{{ m.product.brand }}</span>
-                                    <p style="font-size: 11px; color: #6e615e; margin: 4px 0 0;">{{ m.match_reason }}</p>
-                                </div>
-                            </div>
-
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
-                                <span class="confidence-tag">{{ m.confidence }}% Confidence</span>
-                                <a href="{{ url_for('product_detail_route', product_id=m.product.id) }}" class="admin-btn admin-btn-primary" style="font-size: 12px; padding: 6px 14px;">
-                                    View Full Analysis →
-                                </a>
+                            {% endif %}
+                            <div style="margin-top: 6px; font-size: 11.5px; color: #7d6e6a;">
+                                <strong>Clarity:</strong> {{ extracted.clarity|capitalize if extracted.clarity else 'Clear' }} •
+                                <strong>Confidence:</strong> {{ extracted.confidence|capitalize if extracted.confidence else 'Medium' }}
                             </div>
                         </div>
-                    {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- MATCHED CATALOG PRODUCTS -->
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    {% if matches %}
+                        <h3 style="font-size: 16px; font-weight: 800; color: #271f1d; margin: 4px 0 0;">
+                            Matched Products ({{ matches|length }})
+                        </h3>
+                        {% for m in matches %}
+                            <div class="match-card">
+                                <div style="display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 64px; height: 64px; border-radius: 12px; background: #fffaf8; border: 1px solid #ead7d3; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">
+                                        {% if m.product.image_url and m.product.image_url.startswith('http') %}
+                                            <img src="{{ m.product.image_url }}" alt="" style="max-width: 90%; max-height: 90%; object-fit: contain;">
+                                        {% else %}
+                                            <span style="font-size: 28px;">🧴</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h4 style="font-size: 16px; font-weight: 800; color: #271f1d; margin: 0 0 2px;">{{ m.product.name }}</h4>
+                                        <span style="font-size: 13px; color: #b7655b; font-weight: 700;">{{ m.product.brand }}</span>
+                                        <p style="font-size: 11.5px; color: #6e615e; margin: 4px 0 0;">{{ m.match_reason }}</p>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                    <span class="confidence-tag">{{ m.confidence }}% Match</span>
+                                    <a href="{{ url_for('product_detail_route', product_id=m.product.id) }}" class="admin-btn admin-btn-primary" style="font-size: 12px; padding: 7px 14px; white-space: nowrap;">
+                                        View Formulation Analysis →
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; padding: 24px; background: #fff8f6; border-radius: 14px; border: 1px dashed #ead7d3;">
+                            <p style="margin: 0; color: #7d6e6a; font-size: 14px;">No matching catalogue product could be found for this scan. Try entering the barcode manually or searching by brand.</p>
+                        </div>
+                    {% endif %}
                 </div>
             </section>
         {% endif %}
@@ -208,32 +358,177 @@
         <p>Skincare AI · AI-Powered Skincare Intelligence</p>
     </footer>
 
+    <!-- FLOATING FEEDBACK WIDGET (BOTTOM-RIGHT) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/floating_feedback.css') }}">
+    <script src="{{ url_for('static', filename='js/floating_feedback.js') }}" defer></script>
+    {% if session.get('admin_logged_in') %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_notifications.css') }}">
+        <script src="{{ url_for('static', filename='js/admin_notifications.js') }}"></script>
+    {% endif %}
+
     <script>
+        const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('product_image');
         const previewBox = document.getElementById('previewBox');
         const previewImg = document.getElementById('previewImg');
+        const previewFileName = document.getElementById('previewFileName');
+        const btnRemoveImg = document.getElementById('btnRemoveImg');
         const submitBtn = document.getElementById('submitBtn');
+        const clientErrorBox = document.getElementById('clientErrorBox');
+        const scanForm = document.getElementById('scanForm');
+
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+        const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+        function showError(msg) {
+            clientErrorBox.textContent = msg;
+            clientErrorBox.style.display = 'block';
+        }
+
+        function clearError() {
+            clientErrorBox.textContent = '';
+            clientErrorBox.style.display = 'none';
+        }
+
+        function setFile(file) {
+            if (!file) return;
+
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showError('Unsupported file format. Please upload JPG, PNG, or WEBP.');
+                return;
+            }
+
+            if (file.size > MAX_SIZE) {
+                showError('File exceeds 10MB limit. Please upload a smaller photo.');
+                return;
+            }
+
+            clearError();
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                const sizeKb = Math.round(file.size / 1024);
+                previewFileName.textContent = `${file.name} (${sizeKb} KB)`;
+                previewBox.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Populate the file input via DataTransfer
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            } catch (err) {
+                console.warn('DataTransfer not supported:', err);
+            }
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            previewImg.src = '';
+            previewBox.style.display = 'none';
+            clearError();
+        }
+
+        if (btnRemoveImg) {
+            btnRemoveImg.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFile();
+            });
+        }
 
         if (fileInput) {
             fileInput.addEventListener('change', (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        previewImg.src = event.target.result;
-                        previewBox.style.display = 'block';
-                    };
-                    reader.readAsDataURL(file);
+                    setFile(file);
                 }
             });
         }
 
-        document.getElementById('scanForm').addEventListener('submit', () => {
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span>Processing Photo with AI OCR...</span>';
+        // ============================================
+        // DRAG AND DROP HANDLERS
+        // ============================================
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+            document.body.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => {
+                dropzone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => {
+                dropzone.classList.remove('drag-active');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                setFile(dt.files[0]);
             }
         });
+
+        // ============================================
+        // CLIPBOARD PASTE (CTRL+V) HANDLER
+        // ============================================
+        window.addEventListener('paste', (e) => {
+            if (!e.clipboardData || !e.clipboardData.items) return;
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        const extension = blob.type.split('/')[1] || 'png';
+                        const pastedFile = new File([blob], `clipboard_pasted_photo.${extension}`, { type: blob.type });
+                        setFile(pastedFile);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // Form submission state
+        if (scanForm) {
+            scanForm.addEventListener('submit', (e) => {
+                const manualBarcode = document.getElementById('manual_barcode').value.trim();
+                const hasFile = fileInput.files && fileInput.files.length > 0;
+
+                if (!hasFile && !manualBarcode) {
+                    e.preventDefault();
+                    showError('Please select a photo or enter a barcode to scan.');
+                    return;
+                }
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span>Processing Photo with AI Vision & Barcode Engine...</span>';
+                }
+            });
+        }
+
+        // Mobile navbar hamburger toggle
+        const navToggle = document.getElementById('navToggle');
+        const navbarMenu = document.getElementById('navbarMenu');
+        if (navToggle && navbarMenu) {
+            navToggle.addEventListener('click', () => {
+                navToggle.classList.toggle('open');
+                navbarMenu.classList.toggle('active');
+                const expanded = navToggle.classList.contains('open');
+                navToggle.setAttribute('aria-expanded', expanded);
+            });
+        }
     </script>
 </body>
 </html>

@@ -12,7 +12,7 @@ from product_service import (
     seed_products_if_needed
 )
 from vision_service import (
-    analyze_product_image_ocr, match_ocr_to_products
+    analyze_product_image_ocr, match_ocr_to_products, process_full_scan
 )
 from analysis_service import (
     analyze_product_formulation, detect_routine_conflicts,
@@ -44,11 +44,13 @@ from dotenv import load_dotenv
 import os
 import re
 import html
-from ollama import Client
+import groq_service
 from products_data import PRODUCTS
 # Load the external product catalogue without changing manual products.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+json_path = os.path.join(BASE_DIR, "external_products_cleaned.json")
 try:
-    with open("external_products_cleaned.json", "r", encoding="utf-8") as file:
+    with open(json_path, "r", encoding="utf-8") as file:
         EXTERNAL_RAW_PRODUCTS = json.load(file)
 except (OSError, json.JSONDecodeError) as error:
     print("External product catalogue could not be loaded:", error)
@@ -151,15 +153,10 @@ def set_security_headers(response):
     return response
 
 # ========================================
-# OLLAMA CLOUD
+# GROQ AI SERVICE CONFIGURATION
 # ========================================
-
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
-
-client = Client(
-    host="https://ollama.com",
-    headers={"Authorization": f"Bearer {OLLAMA_API_KEY}"},
-)
+# Unified AI intelligence (Ask AI, Ingredient Analysis, Skin Analysis,
+# Product Finder, and Formulation Dossiers) is powered by groq_service.
 
 # ========================================
 # SHARED HELPERS
@@ -304,28 +301,12 @@ Use these sections:
 """
 
     try:
-        response = client.chat(
-            model="gpt-oss:120b",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You provide careful, beginner-friendly skincare "
-                        "education. Do not diagnose or prescribe medication."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        )
-
-        result = clean_markdown(response["message"]["content"])
-
+        result = groq_service.explain_ingredient(display_name)
         if not result:
             result = (
                 "Unable to generate the ingredient information right now. "
                 "Please try again."
             )
-
     except Exception as e:
         print("INGREDIENT ERROR:", e)
         result = (
@@ -451,29 +432,12 @@ FORMATTING RULES
 """
 
     try:
-        response = client.chat(
-            model="gpt-oss:120b",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You provide cautious skincare education. "
-                        "Do not diagnose, prescribe medication, or invent "
-                        "personal information."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        )
-
-        result = clean_markdown(response["message"]["content"])
-
+        result = groq_service.analyze_skin_profile(prompt)
         if not result:
             result = (
                 "Unable to analyze the skin profile right now. "
                 "Please try again later."
             )
-
     except Exception as e:
         print("SKIN ANALYSIS ERROR:", e)
         result = (
@@ -653,7 +617,7 @@ def products():
             )
         )
 
-    # PREPARE VERIFIED PRODUCT DETAILS FOR OLLAMA
+    # PREPARE VERIFIED PRODUCT DETAILS FOR GROQ
     if filtered_products:
         product_information_parts = []
 
@@ -746,34 +710,12 @@ Summarize the results honestly.
 """
 
     try:
-        response = client.chat(
-            model="gpt-oss:120b",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a careful skincare product assistant. "
-                        "Use only the product details supplied in the prompt. "
-                        "Never invent product information or claim unknown "
-                        "skin suitability."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            options={"temperature": 0.2, "num_predict": 800}
-        )
-
-        result = clean_markdown(response["message"]["content"])
-
+        result = groq_service.explain_products_selection(prompt)
         if not result:
             result = (
                 "The product results were processed, but the AI explanation "
                 "could not be generated. Please try again."
             )
-
     except Exception as e:
         print("PRODUCT FINDER ERROR:", e)
         result = (
@@ -927,7 +869,7 @@ def ask_ai():
 
     question = request.form.get("question", "").strip()
 
-    # Validate before contacting Ollama.
+    # Validate before contacting Groq.
     validation_error = check_ask_ai_question(question)
 
     if validation_error:
@@ -983,20 +925,9 @@ Do not remove legitimate terms such as AHA/BHA, SPF 50, or 0.5-2%.
 """
 
     try:
-        response = client.chat(
-            model="gpt-oss:120b",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": question},
-            ],
-            options={"temperature": 0.2, "num_predict": 600},
-        )
-
-        answer = clean_markdown(response["message"]["content"])
-
+        answer = groq_service.ask_skincare_assistant(question)
         if not answer:
             answer = "I couldn't generate an answer right now. Please try again."
-
     except Exception as e:
         print("ASK AI ERROR:", e)
         answer = (
@@ -1115,91 +1046,6 @@ def init_db():
         seed_products_if_needed()
     except Exception as e:
         pass
-    db_url = get_database_url()
-    if db_url:
-        import psycopg
-        with psycopg.connect(db_url) as conn:
-            with conn.cursor() as cur:
-                # Feedback table
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS skincare_feedback (
-                        id BIGSERIAL PRIMARY KEY,
-                        rating INTEGER CHECK (rating IS NULL OR (rating BETWEEN 1 AND 5)),
-                        category TEXT NOT NULL DEFAULT 'general',
-                        message TEXT NOT NULL,
-                        user_name TEXT DEFAULT '',
-                        user_email TEXT DEFAULT '',
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                # Auto-migrate columns if missing
-                cur.execute("ALTER TABLE skincare_feedback ADD COLUMN IF NOT EXISTS user_name TEXT DEFAULT '';")
-                cur.execute("ALTER TABLE skincare_feedback ADD COLUMN IF NOT EXISTS user_email TEXT DEFAULT '';")
-
-                # Admin table
-                cur.execute("""
-                    CREATE TABLE IF NOT EXISTS skincare_admin (
-                        id SERIAL PRIMARY KEY,
-                        username TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                # Seed admin if none exists
-                cur.execute("SELECT COUNT(*) FROM skincare_admin")
-                if cur.fetchone()[0] == 0:
-                    admin_id = os.getenv("ADMIN_ID") or os.getenv("ADMIN_USERNAME") or "admin"
-                    admin_pw = os.getenv("ADMIN_PASSWORD") or "admin123"
-                    pw_hash = bcrypt.hashpw(admin_pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                    cur.execute(
-                        "INSERT INTO skincare_admin (username, password_hash) VALUES (%s, %s)",
-                        (admin_id, pw_hash)
-                    )
-    else:
-        # Local development fallback
-        os.makedirs(os.path.dirname(FEEDBACK_DB_PATH), exist_ok=True)
-        with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-            cur = conn.cursor()
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS skincare_feedback (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    rating INTEGER CHECK (rating IS NULL OR (rating BETWEEN 1 AND 5)),
-                    category TEXT NOT NULL DEFAULT 'general',
-                    message TEXT NOT NULL,
-                    user_name TEXT DEFAULT '',
-                    user_email TEXT DEFAULT '',
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            # Auto-migrate columns if missing
-            cur.execute("PRAGMA table_info(skincare_feedback)")
-            cols = [c[1] for c in cur.fetchall()]
-            if 'user_name' not in cols:
-                cur.execute("ALTER TABLE skincare_feedback ADD COLUMN user_name TEXT DEFAULT ''")
-            if 'user_email' not in cols:
-                cur.execute("ALTER TABLE skincare_feedback ADD COLUMN user_email TEXT DEFAULT ''")
-
-            # Admin table
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS skincare_admin (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            cur.execute("SELECT COUNT(*) FROM skincare_admin")
-            if cur.fetchone()[0] == 0:
-                admin_id = os.getenv("ADMIN_ID") or os.getenv("ADMIN_USERNAME") or "admin"
-                admin_pw = os.getenv("ADMIN_PASSWORD") or "admin123"
-                pw_hash = bcrypt.hashpw(admin_pw.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                cur.execute(
-                    "INSERT INTO skincare_admin (username, password_hash) VALUES (?, ?)",
-                    (admin_id, pw_hash)
-                )
-
 
 
 # Automatic application startup database initialization and product seeding
@@ -1214,9 +1060,6 @@ except Exception as _startup_db_err:
 
 def save_feedback(rating, category, message, user_name="", user_email=""):
     """Persist user feedback into the database."""
-    init_db()
-    db_url = get_database_url()
-
     clean_message = clean_text_input(message)
     clean_user_name = clean_text_input(user_name, max_len=100)
     clean_user_email = clean_text_input(user_email, max_len=150)
@@ -1232,26 +1075,14 @@ def save_feedback(rating, category, message, user_name="", user_email=""):
         except (ValueError, TypeError):
             pass
 
-    if db_url:
-        import psycopg
-        with psycopg.connect(db_url) as conn:
-            conn.execute(
-                "INSERT INTO skincare_feedback (rating, category, message, user_name, user_email) VALUES (%s, %s, %s, %s, %s)",
-                (rating_val, category, clean_message, clean_user_name, clean_user_email)
-            )
-    else:
-        with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-            conn.execute(
-                "INSERT INTO skincare_feedback (rating, category, message, user_name, user_email) VALUES (?, ?, ?, ?, ?)",
-                (rating_val, category, clean_message, clean_user_name, clean_user_email)
-            )
+    database.execute_query(
+        "INSERT INTO skincare_feedback (rating, category, message, user_name, user_email) VALUES (?, ?, ?, ?, ?)",
+        [rating_val, category, clean_message, clean_user_name, clean_user_email]
+    )
 
 
 def fetch_all_feedbacks(category=None, rating=None, search=None, sort="newest"):
     """Fetch feedbacks with filtering, search, and sorting."""
-    init_db()
-    db_url = get_database_url()
-
     where_clauses = []
     params = []
 
@@ -1278,34 +1109,21 @@ def fetch_all_feedbacks(category=None, rating=None, search=None, sort="newest"):
     if sort == "oldest":
         order_sql = " ORDER BY id ASC"
     elif sort == "highest":
-        order_sql = " ORDER BY rating DESC NULLS LAST, id DESC" if db_url else " ORDER BY rating DESC, id DESC"
+        order_sql = " ORDER BY rating DESC NULLS LAST, id DESC" if database.is_postgres() else " ORDER BY rating DESC, id DESC"
     elif sort == "lowest":
-        order_sql = " ORDER BY rating ASC NULLS LAST, id DESC" if db_url else " ORDER BY rating ASC, id DESC"
+        order_sql = " ORDER BY rating ASC NULLS LAST, id DESC" if database.is_postgres() else " ORDER BY rating ASC, id DESC"
     else:
         order_sql = " ORDER BY id DESC"
 
     query = f"SELECT id, rating, category, message, created_at, user_name, user_email FROM skincare_feedback{where_sql}{order_sql}"
-
-    rows = []
-    if db_url:
-        import psycopg
-        pg_query = query.replace("?", "%s")
-        with psycopg.connect(db_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute(pg_query, params)
-                rows = cur.fetchall()
-    else:
-        with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-            cur = conn.cursor()
-            cur.execute(query, params)
-            rows = cur.fetchall()
+    rows = database.execute_query(query, params, fetchall=True)
 
     results = []
     for row in rows:
-        r_num = int(row[1]) if row[1] is not None else None
+        r_num = int(row["rating"]) if row["rating"] is not None else None
         stars = ("★" * r_num + "☆" * (5 - r_num)) if r_num else "No rating"
-        uname = row[5] or ""
-        uemail = row[6] or ""
+        uname = row["user_name"] or ""
+        uemail = row["user_email"] or ""
         if uname and uemail:
             user_display = f"{uname} ({uemail})"
         elif uname:
@@ -1316,14 +1134,14 @@ def fetch_all_feedbacks(category=None, rating=None, search=None, sort="newest"):
             user_display = "Anonymous Visitor"
 
         results.append({
-            "id": row[0],
+            "id": row["id"],
             "rating": r_num,
             "stars": stars,
-            "category": row[2],
-            "category_label": CATEGORY_LABELS.get(row[2], str(row[2]).replace("_", " ").title()),
-            "message": row[3],
-            "created_at": str(row[4]),
-            "created_at_formatted": format_feedback_date(row[4]),
+            "category": row["category"],
+            "category_label": CATEGORY_LABELS.get(row["category"], str(row["category"]).replace("_", " ").title()),
+            "message": row["message"],
+            "created_at": str(row["created_at"]),
+            "created_at_formatted": format_feedback_date(row["created_at"]),
             "user_name": uname,
             "user_email": uemail,
             "user_display": user_display
@@ -1333,7 +1151,6 @@ def fetch_all_feedbacks(category=None, rating=None, search=None, sort="newest"):
 
 def get_feedback_summary_data():
     """Calculate aggregate summary stats, rating distribution, and latest reviews."""
-    init_db()
     all_feedbacks = fetch_all_feedbacks(sort="newest")
     total_count = len(all_feedbacks)
 
@@ -1392,15 +1209,7 @@ def get_feedback_summary_data():
 
 def delete_feedback_by_id(feedback_id):
     """Delete a feedback entry by ID."""
-    init_db()
-    db_url = get_database_url()
-    if db_url:
-        import psycopg
-        with psycopg.connect(db_url) as conn:
-            conn.execute("DELETE FROM skincare_feedback WHERE id = %s", (feedback_id,))
-    else:
-        with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-            conn.execute("DELETE FROM skincare_feedback WHERE id = ?", (feedback_id,))
+    database.execute_query("DELETE FROM skincare_feedback WHERE id = ?", [feedback_id])
 
 
 # ========================================
@@ -1409,32 +1218,13 @@ def delete_feedback_by_id(feedback_id):
 
 def get_admin_user(username=None):
     """Fetch admin user from database by username or get the primary admin."""
-    init_db()
-    db_url = get_database_url()
     query = "SELECT id, username, password_hash FROM skincare_admin"
     params = []
     if username:
         query += " WHERE username = ?"
         params.append(username)
     query += " ORDER BY id ASC LIMIT 1"
-
-    row = None
-    if db_url:
-        import psycopg
-        pg_query = query.replace("?", "%s")
-        with psycopg.connect(db_url) as conn:
-            with conn.cursor() as cur:
-                cur.execute(pg_query, params)
-                row = cur.fetchone()
-    else:
-        with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-            cur = conn.cursor()
-            cur.execute(query, params)
-            row = cur.fetchone()
-
-    if row:
-        return {"id": row[0], "username": row[1], "password_hash": row[2]}
-    return None
+    return database.execute_query(query, params, fetchone=True)
 
 
 def verify_admin_login(username, password):
@@ -1469,23 +1259,13 @@ def update_admin_account(current_username, current_password, new_username, new_p
         return False, "New password must contain at least one number or special character."
 
     new_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    db_url = get_database_url()
     admin_id = admin["id"]
 
     try:
-        if db_url:
-            import psycopg
-            with psycopg.connect(db_url) as conn:
-                conn.execute(
-                    "UPDATE skincare_admin SET username = %s, password_hash = %s, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
-                    (new_username, new_hash, admin_id)
-                )
-        else:
-            with sqlite3.connect(FEEDBACK_DB_PATH) as conn:
-                conn.execute(
-                    "UPDATE skincare_admin SET username = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-                    (new_username, new_hash, admin_id)
-                )
+        database.execute_query(
+            "UPDATE skincare_admin SET username = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            [new_username, new_hash, admin_id]
+        )
         return True, "Admin credentials updated successfully."
     except Exception as exc:
         app.logger.error(f"Failed to update admin credentials: {exc}")
@@ -2028,28 +1808,34 @@ def product_detail_route(product_id):
 
 @app.route("/scan", methods=["GET", "POST"])
 def scan():
+    matches = None
+    extracted = None
+    barcode_info = None
+    image_url = None
     results = None
     barcode_input = ""
     error = None
     
     if request.method == "POST":
-        barcode_input = request.form.get("barcode", "").strip()
+        barcode_input = (request.form.get("manual_barcode") or request.form.get("barcode") or "").strip()
+        uploaded_file = request.files.get("product_image") or request.files.get("image")
         
         # Check if an image was uploaded
-        if "image" in request.files and request.files["image"].filename:
-            file = request.files["image"]
-            image_bytes = file.read()
-            if image_bytes:
-                ocr_data, err = analyze_product_image_ocr(image_bytes, file.filename)
-                if err:
-                    error = err
-                elif ocr_data:
-                    matches = match_ocr_to_products(ocr_data)
-                    results = {
-                        "ocr": ocr_data,
-                        "matches": matches,
-                        "mode": "image"
-                    }
+        if uploaded_file and uploaded_file.filename:
+            scan_result, err = process_full_scan(uploaded_file)
+            if err:
+                error = err
+            elif scan_result:
+                matches = scan_result.get("matches") or []
+                extracted = scan_result.get("ocr_data")
+                barcode_info = scan_result.get("barcode_info")
+                image_url = scan_result.get("image_url")
+                results = {
+                    "ocr": extracted,
+                    "matches": matches,
+                    "barcode_info": barcode_info,
+                    "mode": "image"
+                }
         elif barcode_input:
             prod = get_product_by_barcode(barcode_input)
             if not prod:
@@ -2057,10 +1843,15 @@ def scan():
             if prod:
                 return redirect(url_for("product_detail_route", product_id=prod["id"]))
             else:
-                error = f"No product found for barcode '{barcode_input}'. You can try searching by product name."
+                error = f"No product found for barcode '{barcode_input}'. You can try searching by product name or uploading a packaging photo."
 
     return render_template(
         "product_scan.html",
+        matches=matches,
+        extracted=extracted,
+        barcode_info=barcode_info,
+        image_url=image_url,
+        manual_barcode=barcode_input,
         results=results,
         barcode=barcode_input,
         error=error

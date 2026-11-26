@@ -1,176 +1,265 @@
-# ✦ Skincare AI — AI-Powered Skincare Product Research & Analysis Platform
+# Skincare AI — AI-Powered Skincare Product Research & Analysis
 
-> **Live Deployment:** [https://skincare-ai-celq.onrender.com](https://skincare-ai-celq.onrender.com)  
-> **Repository:** `https://github.com/anushkashailani2026-sudo/skincare-ai.git`
+Skincare AI is a skincare research and analysis platform powered by Groq AI. It helps users understand skincare ingredients, compare products, assess skin suitability, build routines, and explore skincare-related concerns.
 
-Skincare AI is an advanced, evidence-based skincare intelligence platform designed to decode cosmetic formulations, detect active conflicts, analyze packaging labels via Vision OCR, build personalized AM/PM regimens, and empower consumers with genuine product reviews and moderation.
-
----
-
-## 🌟 Core Features & Modules
-
-### 1. 📷 Product Packaging OCR & Barcode Scanner
-- **Vision OCR Extraction:** Upload packaging photographs (JPG, PNG, WEBP) to extract Brand Name, Full Product Title, Barcode Number, and Ingredient Text using Ollama Cloud Vision (`gemma4:31b`).
-- **Barcode & Catalogue Matcher:** Instant lookup against local database and Open Beauty Facts API.
-- **Image Sanitization:** Automatic resizing, format normalization, and memory optimization via Pillow.
-
-### 2. 🔬 Formulation Intelligence & Skin Suitability Analysis
-- **Evidence-Based Actives Detection:** Identifies Niacinamide, Salicylic Acid, Hyaluronic Acid, Ceramides, Retinol, Centella Asiatica, Vitamin C, Zinc Oxide, etc.
-- **Sensitizer & Irritant Scanning:** Scans for drying alcohols, heavy synthetic fragrances, sulfates, and pore-clogging comedogenic esters.
-- **Skin Type Compatibility Meter:** Evaluates suitability percentages across 6 skin profiles (Oily, Dry, Combination, Sensitive, Acne-Prone, Normal).
-- **Clinical AI Narrative Synthesis:** Combines algorithmic ingredient analysis with Ollama AI for dermatological summaries.
-
-### 3. ⚖️ Head-to-Head Product Formulation Comparison
-- Compare 2 to 3 skincare products side-by-side.
-- Inspect shared vs. unique active ingredients, key functional benefits, price per unit, and suitability scores in a unified matrix.
-
-### 4. ✨ Personalized AM / PM Regimen Builder
-- **Circadian Step Architecture:** Sequences products in clinical dermatological order (Cleanser → Active Serum → Moisturizer → Broad Spectrum SPF for AM; Double Cleanse → Treatment → Barrier Repair for PM).
-- **Automated Conflict Detection:** Warns against hazardous active clashes (e.g. Retinoids + Direct AHA/BHA exfoliants, multiple high-strength peeling acids).
-- **Save & Manage Routines:** Registered users can save custom AM/PM regimens to their private profile.
-
-### 5. 📔 Daily Epidermal Progress Journal
-- Log daily skincare products applied, skin comfort ratings (1 to 5 stars), symptoms (purging, glow, redness), and environmental notes.
-- Flag irritation episodes and severity (mild, moderate, severe) to pinpoint culprit formulations.
-
-### 6. 👤 User Authentication & Community Reviews
-- Secure user registration and login with **Bcrypt** password hashing and HTTP-only session cookies.
-- Verified members can submit 1-to-5 star product reviews with title, review body, skin type, primary concern, and duration of use.
-- Review status tracking (Pending → Approved / Rejected / Flagged).
-
-### 7. 🛡️ Private Admin Dashboard & Moderation Portal
-- **Separate Protected Route:** `/admin/login` and `/admin/dashboard` (not linked in public navigation).
-- **Product Review Moderation:** Approve, reject, flag, or delete community submissions.
-- **Unseen Reviews Badge & Notification Stream:** Real-time visibility into new submissions.
-- **CSV Data Export:** One-click CSV download for both product reviews and platform feedback.
-- **Admin Settings:** Securely change Admin Username and Password with current password verification and strength enforcement.
-
-### 8. 🔔 Real-time Bottom-Right Floating Notification Cards
-- When any user submits a product review, authenticated administrators receive real-time floating notification cards at the bottom-right corner of the website.
-- Shows product name, star rating, reviewer name, and review excerpt.
-- Dismissible or clickable to navigate directly to the review in the admin moderation dashboard.
-- Protected so ordinary site visitors never receive admin alerts.
+**Live Website:** https://skincare-ai-celq.onrender.com
+**GitHub Repository:** https://github.com/anushkashailani2026-sudo/skincare-ai
 
 ---
 
-## 🗄️ Database Architecture
+## Core Features
 
-The application utilizes a universal database manager (`db.py`) supporting seamless transitions between **SQLite** (local development) and **PostgreSQL** (production on Render / Supabase / Neon):
+### 1. Product Packaging Scanner
+- Extracts product names, brands, barcodes, and ingredient information from packaging images.
+- Supports image uploads in JPG, PNG, and WEBP formats.
+- Uses barcode lookup and product catalogue matching.
+- Processes images using Pillow.
 
-| Table Name | Description |
-| :--- | :--- |
-| `products` | 496 seeded products + live Open Beauty Facts API cache |
-| `users` | Registered users with bcrypt password hashes |
-| `user_profiles` | User skin types, concerns, and sensitivity preferences |
-| `user_reviews` | Community product reviews with moderation status & admin_seen flag |
-| `skincare_routines` | Saved AM/PM custom skincare regimens |
-| `routine_items` | Individual product steps belonging to a routine |
-| `skincare_journal` | Daily skin tracking entries and irritation logs |
-| `skincare_feedback` | General website feedback entries |
-| `skincare_admin` | Hashed administrator account credentials |
-| `external_reviews` | Cached external review provider metrics |
-| `product_prices` | Multi-retailer reference pricing |
+### 2. Ingredient and Skin Analysis
+- Identifies common skincare ingredients such as Niacinamide, Salicylic Acid, Hyaluronic Acid, Ceramides, Retinol, and Vitamin C.
+- Highlights potential irritants and sensitizers.
+- Provides skin-type compatibility information.
+- Generates AI-assisted ingredient explanations and skin analysis.
+
+### 3. Product Comparison
+- Compare two or more skincare products.
+- Review common and different ingredients.
+- Examine product benefits, prices, and suitability information.
+
+### 4. Personalized Skincare Routines
+- Build AM and PM skincare routines.
+- Organize products into skincare steps.
+- Identify potential ingredient conflicts.
+- Save and manage routines through user accounts.
+
+### 5. Skincare Journal
+- Record daily skincare activities.
+- Track skin comfort, symptoms, and irritation.
+- Maintain a personal skincare progress history.
+
+### 6. User Accounts and Reviews
+- User registration and login.
+- Password hashing using Bcrypt.
+- Product reviews with ratings and written feedback.
+- Review moderation and status tracking.
+
+### 7. Admin Dashboard
+- Separate administrator login and dashboard.
+- Approve, reject, flag, and manage reviews.
+- View notifications for new submissions.
+- Export review and feedback data as CSV.
+- Manage administrator credentials.
+
+### 8. Admin Notifications
+- Floating notification cards for new product reviews.
+- Display reviewer and product information.
+- Allow administrators to navigate to submitted reviews.
 
 ---
 
-## 🚀 Local Installation & Setup (Windows / macOS / Linux)
+## AI Architecture
+
+AI operations are centralized through `groq_service.py`.
+
+| Feature | Configured Groq Model |
+|---|---|
+| Ask AI Assistant | `openai/gpt-oss-120b` |
+| Ingredient Analysis | `openai/gpt-oss-120b` |
+| Skin Assessment | `openai/gpt-oss-120b` |
+| Product Assistant | `openai/gpt-oss-120b` |
+| Formulation Analysis | `openai/gpt-oss-120b` |
+| Packaging Vision OCR | `qwen/qwen3.8-27b` |
+
+The models can be configured through environment variables.
+
+---
+
+## Database
+
+The application supports:
+
+- **SQLite:** Used for local development.
+- **PostgreSQL:** Supported through the database configuration for hosted deployments.
+
+The database includes tables for:
+
+- Products
+- Users
+- User profiles
+- Product reviews
+- Skincare routines
+- Routine items
+- Skincare journal entries
+- Website feedback
+- Administrator accounts
+- External reviews
+- Product prices
+
+**Important deployment note:** If Render is using SQLite without a persistent disk, database data may not survive service restarts or redeployments. PostgreSQL migration and persistent production storage are separate setup tasks and should be completed before relying on permanent user data.
+
+---
+
+## Local Installation
 
 ### 1. Clone the Repository
-```powershell
+
+```bash
 git clone https://github.com/anushkashailani2026-sudo/skincare-ai.git
 cd skincare-ai
 ```
 
-### 2. Set Up Virtual Environment
-```powershell
-# Windows
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+### 2. Create a Virtual Environment
 
-# macOS / Linux
+**Windows:**
+
+```powershell
+python -m venv venv
+```
+
+**macOS / Linux:**
+
+```bash
 python3 -m venv venv
-source venv/bin/activate
 ```
 
 ### 3. Install Dependencies
+
 ```powershell
-pip install -r requirements.txt
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 ### 4. Configure Environment Variables
-Create a `.env` file in the project root:
+
+Create a `.env` file in the project root.
+
+You can use `.env.example` as the template.
+
+Configure the following variables:
+
 ```ini
-# Database (leave blank for automatic local SQLite in instance/feedback.db)
+# Database
 DATABASE_URL=
 
-# Initial Admin Credentials (seeded on first database initialization)
+# Initial Administrator Credentials
 ADMIN_ID=admin
-ADMIN_PASSWORD=admin123
+ADMIN_PASSWORD=replace_with_a_strong_password
 
-# Secret Key for Sessions
-SESSION_SECRET=your_super_secret_session_key_here
+# Session Security
+SESSION_SECRET=replace_with_a_long_random_secret
 
-# Ollama Cloud API Key
-OLLAMA_API_KEY=your_ollama_api_key_here
-OLLAMA_TEXT_MODEL=gpt-oss:120b
-OLLAMA_VISION_MODEL=gemma4:31b
+# Groq API
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_TEXT_MODEL=openai/gpt-oss-120b
+GROQ_VISION_MODEL=qwen/qwen3.8-27b
 
 # Environment
 NODE_ENV=development
 ```
 
+Keep your actual `.env` file private. Never upload API keys, passwords, or secret values to GitHub.
+
 ### 5. Run the Application
+
+**Windows PowerShell:**
+
 ```powershell
-# Windows PowerShell
-& "venv\Scripts\python.exe" app.py
+& ".\venv\Scripts\python.exe" app.py
 ```
-Open [http://localhost:5000](http://localhost:5000) in your browser.
+
+Open the application at:
+
+http://127.0.0.1:5000
 
 ---
 
-## 🧪 Automated Test Suite
+## Testing
 
-Run the master test suite verifying all 9 core subsystems:
+Run the Groq integration and AI tests:
+
 ```powershell
-& "venv\Scripts\python.exe" test_master_suite.py
+& ".\venv\Scripts\python.exe" test_groq.py
 ```
 
-Run scanner and vision OCR tests:
+Run the master test suite:
+
 ```powershell
-& "venv\Scripts\python.exe" test_scanner_vision.py
+& ".\venv\Scripts\python.exe" test_master_suite.py
+```
+
+Run scanner and vision tests:
+
+```powershell
+& ".\venv\Scripts\python.exe" test_scanner_vision.py
+```
+
+Run beauty API tests:
+
+```powershell
+& ".\venv\Scripts\python.exe" test_beauty_api.py
 ```
 
 ---
 
-## ☁️ Deployment on Render
+## Render Deployment
 
-The repository is configured for automated zero-downtime deployment on Render:
+### Build Command
 
-1. **Build Command:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. **Start Command:**
-   ```bash
-   gunicorn app:app
-   ```
-3. **Required Environment Variables in Render Dashboard:**
-   - `ADMIN_ID`: Your chosen administrator login ID
-   - `ADMIN_PASSWORD`: Your chosen administrator password
-   - `SESSION_SECRET`: A secure random cryptographic secret string
-   - `DATABASE_URL`: Hosted PostgreSQL connection string (Render PostgreSQL or Supabase)
-   - `OLLAMA_API_KEY`: Your Ollama Cloud API key
-   - `OLLAMA_TEXT_MODEL`: `gpt-oss:120b`
-   - `OLLAMA_VISION_MODEL`: `gemma4:31b`
-   - `NODE_ENV`: `production`
+```bash
+pip install -r requirements.txt
+```
+
+### Start Command
+
+```bash
+gunicorn app:app
+```
+
+### Environment Variables
+
+Configure the required variables in the Render service dashboard:
+
+| Variable | Value |
+|---|---|
+| `GROQ_API_KEY` | Your private Groq API key |
+| `GROQ_TEXT_MODEL` | `openai/gpt-oss-120b` |
+| `GROQ_VISION_MODEL` | `qwen/qwen3.8-27b` |
+| `ADMIN_ID` | Your chosen administrator ID |
+| `ADMIN_PASSWORD` | A strong administrator password |
+| `SESSION_SECRET` | A long, random secret |
+| `NODE_ENV` | `production` |
+
+`DATABASE_URL` should only be configured when a PostgreSQL database is available and the application is ready to use it.
 
 ---
 
-## 🔒 Security & Privacy Architecture
+## Security and Privacy
 
-- **Zero Plain-Text Passwords:** Bcrypt salt hashing on all admin and member passwords.
-- **Session Security:** `httpOnly=True`, `SameSite='Lax'`, and `secure=True` in production.
-- **Input Sanitization:** Multi-layer input trimming, type enforcement, and character limits.
-- **Security Headers:** Strict Content Security Policy (CSP), `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, and `X-XSS-Protection`.
-- **Admin Isolation:** Unauthenticated requests to `/admin/*` or `/api/admin/*` are strictly blocked.
-- **Protected Environment:** `.env`, local `.db` files, and uploaded temporary images are ignored via `.gitignore` and never committed.
+- Passwords are hashed using Bcrypt.
+- Session cookies use secure settings in production.
+- Input validation and sanitization are applied.
+- Security headers help protect against common web vulnerabilities.
+- Administrator routes are protected.
+- API keys and environment secrets are kept outside the Git repository.
+- Local database files and temporary files are excluded through `.gitignore`.
+
+---
+
+## Technologies Used
+
+- Python
+- Flask
+- Groq API
+- SQLite
+- PostgreSQL support
+- HTML
+- CSS
+- JavaScript
+- Pillow
+- Bcrypt
+- Gunicorn
+
+---
+
+**Project:** Skincare AI
+**Repository:** https://github.com/anushkashailani2026-sudo/skincare-ai
+**Deployment:** https://skincare-ai-celq.onrender.com

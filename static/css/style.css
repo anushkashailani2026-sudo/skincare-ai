@@ -27,33 +27,134 @@ a {
 
 .navbar {
     width: 100%;
-    padding: 22px 7%;
+    padding: 16px 5%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fffaf8;
+    background: rgba(255, 250, 248, 0.96);
     border-bottom: 1px solid #f1dfda;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
 }
 
 .logo {
     font-size: 20px;
     font-weight: 800;
     letter-spacing: 1px;
+    color: #271f1d;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
+.logo:hover {
+    color: #b7655b;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.nav-links,
 .navbar nav {
     display: flex;
-    gap: 30px;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
 }
 
+.nav-link,
 .navbar nav a {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 600;
     color: #554744;
+    padding: 6px 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
+.nav-link:hover,
+.nav-link.active,
 .navbar nav a:hover {
-    color: #d96f61;
+    color: #b7655b;
+    border-bottom-color: #b7655b;
+}
+
+.nav-auth {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.nav-auth-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nav-auth-btn.signin-btn {
+    background: #fff0ed;
+    color: #b7655b;
+    border: 1.5px solid #ead7d3;
+}
+
+.nav-auth-btn.signin-btn:hover {
+    background: #b7655b;
+    color: #ffffff;
+    border-color: #b7655b;
+    box-shadow: 0 4px 12px rgba(183, 101, 91, 0.25);
+}
+
+.nav-auth-btn.user-btn {
+    background: #ffffff;
+    color: #271f1d;
+    border: 1.5px solid #ead7d3;
+}
+
+.nav-auth-btn.user-btn:hover {
+    border-color: #b7655b;
+    color: #b7655b;
+}
+
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    z-index: 1002;
+}
+
+.nav-toggle .bar {
+    width: 100%;
+    height: 2.5px;
+    background-color: #271f1d;
+    border-radius: 4px;
+    transition: all 0.3s ease;
 }
 
 
@@ -668,6 +769,77 @@ footer {
 ======================================== */
 
 @media (max-width: 900px) {
+
+    .nav-toggle {
+        display: flex;
+    }
+
+    .navbar-right {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        background: #fffaf8;
+        border-bottom: 2px solid #f1dfda;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 20px 6%;
+        gap: 16px;
+        box-shadow: 0 15px 35px rgba(90, 60, 50, 0.12);
+        max-height: calc(100vh - 60px);
+        overflow-y: auto;
+        transform: translateY(-130%);
+        opacity: 0;
+        pointer-events: none;
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        z-index: 999;
+    }
+
+    .navbar-right.active {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .nav-link {
+        font-size: 15px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border-bottom: none;
+    }
+
+    .nav-link:hover, .nav-link.active {
+        background: #fff0ed;
+    }
+
+    .nav-auth {
+        padding-top: 10px;
+        border-top: 1px solid #f1dfda;
+    }
+
+    .nav-auth-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 11px;
+    }
+
+    .nav-toggle.open .bar:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+
+    .nav-toggle.open .bar:nth-child(2) {
+        opacity: 0;
+    }
+
+    .nav-toggle.open .bar:nth-child(3) {
+        transform: rotate(-45deg) translate(5px, -5px);
+    }
 
     .product-grid {
         grid-template-columns: 1fr;

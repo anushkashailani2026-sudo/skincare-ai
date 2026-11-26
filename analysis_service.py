@@ -7,10 +7,7 @@ ingredient breakdowns, and transparent multi-metric evaluation indicators.
 import os
 import re
 import json
-from ollama import Client
-
-OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
-OLLAMA_TEXT_MODEL = os.getenv("OLLAMA_TEXT_MODEL", "gpt-oss:120b")
+import groq_service
 
 # Evidence-based ingredient knowledge base
 KNOWN_INGREDIENTS = {
@@ -88,12 +85,6 @@ KNOWN_INGREDIENTS = {
     }
 }
 
-
-def get_ollama_client():
-    key = os.getenv("OLLAMA_API_KEY")
-    if not key:
-        return None
-    return Client(host="https://ollama.com", headers={"Authorization": f"Bearer {key}"})
 
 
 def parse_ingredients_list(ingredients_text):
@@ -244,7 +235,7 @@ def check_ingredient_conflicts(ingredients_text):
 def generate_comprehensive_analysis(product):
     """
     Generate an authoritative, evidence-based skincare report for any product.
-    Blends algorithmic clinical analysis with Ollama AI for personalized narrative synthesis.
+    Blends algorithmic clinical analysis with Groq AI for personalized narrative synthesis.
     """
     name = product.get("name", "Product")
     brand = product.get("brand", "Skincare Brand")
@@ -271,41 +262,14 @@ def generate_comprehensive_analysis(product):
         "completeness_label": "Verified Ingredient Registry" if completeness_score >= 80 else "Partial Information"
     }
 
-    # Attempt AI narrative generation with Ollama Cloud
-    ai_narrative = None
-    client = get_ollama_client()
-    if client and ingredients:
-        try:
-            prompt = (
-                f"You are a cosmetic dermatologist and skincare formulation analyst. "
-                f"Provide a concise, evidence-based analysis for this product:\n"
-                f"Product: {name} by {brand}\n"
-                f"Category: {category}\n"
-                f"Ingredients: {ingredients[:1000]}\n\n"
-                f"Include:\n"
-                f"1. Formulation summary\n"
-                f"2. Who will benefit most\n"
-                f"3. Who should exercise caution\n"
-                f"4. Realistic expectations vs marketing claims\n"
-                f"Tone: Scientific, balanced, clear, and reassuring. Do not make medical diagnoses."
-            )
-            resp = client.chat(
-                model=OLLAMA_TEXT_MODEL,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            ai_narrative = resp.message.content.strip()
-        except Exception as e:
-            print("Ollama narrative generation note:", e)
-
-    # If AI call is unavailable, synthesize an evidence-based summary
-    if not ai_narrative:
-        ai_narrative = (
-            f"**{name}** by **{brand}** is formulated as a {category.lower()} designed to support skin health. "
-            f"Based on the ingredient profile, this formulation features "
-            f"{', '.join([a['name'] for a in actives]) if actives else 'gentle supportive emollients and humectants'}. "
-            f"It provides effective skin barrier nourishment with particularly strong suitability for {max(scores, key=scores.get)} skin types. "
-            f"{'Notice: contains ' + ', '.join([i['name'] for i in irritants]) + '; sensitive skin types should perform a 24-hour patch test.' if irritants else 'The formula has an agreeable safety and tolerance profile with minimal common sensitizers.'}"
-        )
+    # AI formulation narrative synthesis via Groq with evidence-based fallback
+    ai_narrative = groq_service.generate_formulation_narrative(
+        name=name,
+        brand=brand,
+        category=category,
+        ingredients=ingredients,
+        actives=actives
+    )
 
     return {
         "product": product,

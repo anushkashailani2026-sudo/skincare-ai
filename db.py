@@ -61,31 +61,36 @@ def execute_query(query, params=None, fetchone=False, fetchall=False):
     """
     if params is None:
         params = []
-    
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        if is_postgres():
-            pg_query = query.replace("?", "%s")
-            cursor.execute(pg_query, params)
-        else:
-            cursor.execute(query, params)
-        
-        if fetchone:
-            row = cursor.fetchone()
-            if row is not None and not isinstance(row, dict):
-                cols = [desc[0] for desc in cursor.description]
-                return dict(zip(cols, row))
-            return row
-        
-        if fetchall:
-            rows = cursor.fetchall()
-            if rows and not isinstance(rows[0], dict):
-                cols = [desc[0] for desc in cursor.description]
-                return [dict(zip(cols, r)) for r in rows]
-            return [dict(r) for r in rows] if rows else []
-        
-        # If insert in SQLite, cursor.lastrowid
-        return cursor
+        try:
+            if is_postgres():
+                pg_query = query.replace("?", "%s")
+                cursor.execute(pg_query, params)
+            else:
+                cursor.execute(query, params)
+
+            if fetchone:
+                row = cursor.fetchone()
+                if row is not None and not isinstance(row, dict):
+                    cols = [desc[0] for desc in cursor.description]
+                    return dict(zip(cols, row))
+                return row
+
+            if fetchall:
+                rows = cursor.fetchall()
+                if rows and not isinstance(rows[0], dict):
+                    cols = [desc[0] for desc in cursor.description]
+                    return [dict(zip(cols, r)) for r in rows]
+                return [dict(r) for r in rows] if rows else []
+
+            # If insert / update / delete, return lastrowid or rowcount
+            last_id = getattr(cursor, "lastrowid", None)
+            row_count = getattr(cursor, "rowcount", None)
+            return last_id if last_id is not None else row_count
+        finally:
+            cursor.close()
 
 
 def init_db():
@@ -93,11 +98,11 @@ def init_db():
     with get_db_connection() as conn:
         cursor = conn.cursor()
         pg = is_postgres()
-        
+
         id_serial = "BIGSERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
         id_int_serial = "SERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
         ts_type = "TIMESTAMPTZ" if pg else "TEXT"
-        
+
         # 1. Existing skincare_feedback table
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS skincare_feedback (
@@ -110,7 +115,7 @@ def init_db():
                 created_at {ts_type} NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # Auto-migrate columns if missing
         if pg:
             cursor.execute("ALTER TABLE skincare_feedback ADD COLUMN IF NOT EXISTS user_name TEXT DEFAULT '';")
@@ -133,7 +138,7 @@ def init_db():
                 updated_at {ts_type} NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # Seed initial admin if none exists
         cursor.execute("SELECT COUNT(*) FROM skincare_admin")
         admin_count = cursor.fetchone()[0]
@@ -310,3 +315,4 @@ def init_db():
                 created_at {ts_type} NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cursor.close()
